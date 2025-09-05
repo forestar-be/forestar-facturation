@@ -1,6 +1,33 @@
 // Service API pour les appels au backend
+import {
+  ReconciliationSummary,
+  ReconciliationDetails,
+  MatchUpdateRequest,
+  MatchCreateRequest,
+  MatchValidationRequest,
+  MatchSuggestion,
+  MultipleResolutionRequest,
+  MatchModificationResult,
+  DetailedReconciliationMatch,
+} from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+export class HttpError extends Error {
+  constructor(
+    public message: string,
+    public status: number
+  ) {
+    super(message);
+    this.name = "HttpError";
+
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+export const isHttpError = (error: any): error is HttpError => {
+  return error && error.name === "HttpError";
+};
 
 // Récupère le token d'authentification depuis le localStorage
 const getAuthToken = () => {
@@ -8,13 +35,68 @@ const getAuthToken = () => {
   return localStorage.getItem("facturation_token");
 };
 
-// Headers par défaut avec authentification
-const getAuthHeaders = () => {
-  const token = getAuthToken();
-  return {
-    "Content-Type": "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
+const apiRequest = async (
+  endpoint: string,
+  method: string,
+  token?: string,
+  body?: any,
+  additionalHeaders: HeadersInit = { "Content-Type": "application/json" },
+  stringifyBody: boolean = true
+) => {
+  const authToken = token || getAuthToken();
+
+  const headers: HeadersInit = {
+    ...(authToken && { Authorization: `Bearer ${authToken}` }),
+    ...additionalHeaders,
   };
+
+  const options: RequestInit = {
+    method,
+    headers,
+  };
+
+  if (body) {
+    options.body = stringifyBody ? JSON.stringify(body) : body;
+  }
+
+  const response: Response = await fetch(`${API_URL}${endpoint}`, options);
+
+  let data;
+
+  try {
+    // Check if the response is a binary type
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      data = await response.json();
+    } else if (contentType && contentType.includes("text/html")) {
+      data = await response.text();
+    } else {
+      data = await response.blob();
+    }
+  } catch (error) {
+    console.warn("Error parsing response", response, error);
+  }
+
+  if (
+    response.status === 403 &&
+    data?.message &&
+    data?.message === "jwt expired"
+  ) {
+    window.location.href = `/connexion?redirect=${window.location.pathname}`;
+  }
+
+  if (!response.ok) {
+    console.error(`${response.statusText} ${response.status}`, data);
+    if (typeof data === "string" && data) {
+      throw new HttpError(data, response.status);
+    }
+    throw new HttpError(
+      data?.message || `${response.statusText} ${response.status}`,
+      response.status
+    );
+  }
+
+  return data;
 };
 
 // Upload des fichiers et démarrage de la réconciliation
@@ -31,23 +113,15 @@ export const uploadFiles = async (
     formData.append("invoices", invoicesFile);
     formData.append("transactions", transactionsFile);
 
-    const token = getAuthToken();
-    const response = await fetch(`${API_URL}/facturation/upload`, {
-      method: "POST",
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-      body: formData,
-    });
+    const data = await apiRequest(
+      "/facturation/upload",
+      "POST",
+      undefined,
+      formData,
+      {}, // No content-type header, browser will set it with boundary
+      false // Don't stringify the body
+    );
 
-    if (!response.ok) {
-      const errorData = await response
-        .json()
-        .catch(() => ({ message: "Erreur inconnue" }));
-      throw new Error(errorData.message || "Erreur lors de l'upload");
-    }
-
-    const data = await response.json();
     return {
       success: data.success,
       reconciliationId: data.reconciliationId,
@@ -55,12 +129,15 @@ export const uploadFiles = async (
     };
   } catch (error) {
     console.error("Erreur upload:", error);
+    if (isHttpError(error)) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors de l'upload des fichiers",
+      message: "Erreur lors de l'upload des fichiers",
     };
   }
 };
@@ -71,6 +148,7 @@ export const getReconciliationStatus = async (
 ): Promise<{
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "ERROR";
   progress: number;
+  message?: string;
   invoicesCount?: number;
   transactionsCount?: number;
   startTime?: number;
@@ -78,23 +156,15 @@ export const getReconciliationStatus = async (
   error?: string;
 } | null> => {
   try {
-    const response = await fetch(
-      `${API_URL}/facturation/reconciliation/${reconciliationId}/status`,
-      {
-        headers: getAuthHeaders(),
-      }
+    return await apiRequest(
+      `/facturation/reconciliation/${reconciliationId}/status`,
+      "GET"
     );
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error("Erreur lors de la récupération du statut");
-    }
-
-    return await response.json();
   } catch (error) {
     console.error("Erreur statut:", error);
+    if (isHttpError(error) && error.status === 404) {
+      return null;
+    }
     return null;
   }
 };
@@ -104,23 +174,15 @@ export const getReconciliationResult = async (
   reconciliationId: string
 ): Promise<any | null> => {
   try {
-    const response = await fetch(
-      `${API_URL}/facturation/reconciliation/${reconciliationId}/result`,
-      {
-        headers: getAuthHeaders(),
-      }
+    return await apiRequest(
+      `/facturation/reconciliation/${reconciliationId}/result`,
+      "GET"
     );
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        return null;
-      }
-      throw new Error("Erreur lors de la récupération du résultat");
-    }
-
-    return await response.json();
   } catch (error) {
     console.error("Erreur résultat:", error);
+    if (isHttpError(error) && error.status === 404) {
+      return null;
+    }
     return null;
   }
 };
@@ -131,55 +193,78 @@ export const pollReconciliationStatus = (
   onStatusUpdate: (status: any) => void,
   onComplete: (result: any) => void,
   onError: (error: string) => void
-) => {
+): (() => void) => {
+  let timeoutId: NodeJS.Timeout | null = null;
+  let isActive = true;
+
   const poll = async () => {
+    if (!isActive) return;
+
     try {
       const status = await getReconciliationStatus(reconciliationId);
 
       if (!status) {
-        onError("Réconciliation non trouvée");
+        if (isActive) onError("Réconciliation non trouvée");
         return;
       }
 
-      onStatusUpdate(status);
+      if (isActive) onStatusUpdate(status);
 
       if (status.status === "COMPLETED") {
         const result = await getReconciliationResult(reconciliationId);
-        if (result) {
+        if (result && isActive) {
           onComplete(result);
         }
         return;
       }
 
       if (status.status === "ERROR") {
-        onError(status.error || "Erreur lors de la réconciliation");
+        if (isActive)
+          onError(status.error || "Erreur lors de la réconciliation");
         return;
       }
 
       // Continue le polling si en cours
       if (status.status === "PENDING" || status.status === "PROCESSING") {
-        setTimeout(poll, 5000); // Poll toutes les 5 secondes pour réduire la charge
+        if (isActive) {
+          timeoutId = setTimeout(poll, 5000); // Poll toutes les 5 secondes pour réduire la charge
+        }
       }
     } catch (error) {
-      onError(error instanceof Error ? error.message : "Erreur lors du suivi");
+      if (isActive) {
+        onError(
+          error instanceof Error ? error.message : "Erreur lors du suivi"
+        );
+      }
     }
   };
 
   // Démarrage du polling
   poll();
+
+  // Retourner la fonction d'annulation
+  return () => {
+    isActive = false;
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+  };
 };
 
-// Version Promise pour un usage plus simple
-export const pollReconciliationStatusAsync = async (
+// Version Promise pour un usage plus simple avec support d'annulation
+export const pollReconciliationStatusAsync = (
   reconciliationId: string,
   onProgress?: (status: {
     status: string;
     progress?: number;
     message?: string;
   }) => void
-): Promise<any> => {
-  return new Promise((resolve, reject) => {
-    pollReconciliationStatus(
+): { promise: Promise<any>; cancel: () => void } => {
+  let cancelPolling: (() => void) | null = null;
+
+  const promise = new Promise((resolve, reject) => {
+    cancelPolling = pollReconciliationStatus(
       reconciliationId,
       (status) => {
         if (onProgress) {
@@ -194,22 +279,45 @@ export const pollReconciliationStatusAsync = async (
       (error) => reject(new Error(error))
     );
   });
+
+  return {
+    promise,
+    cancel: () => {
+      if (cancelPolling) {
+        cancelPolling();
+      }
+    },
+  };
 };
 
 // Helper pour convertir le statut en message
 const getStatusMessage = (status: any): string => {
+  // Message de base généré par le frontend
+  let baseMessage = "";
   switch (status.status) {
     case "PENDING":
-      return "En attente de traitement...";
+      baseMessage = "En attente de traitement...";
+      break;
     case "PROCESSING":
-      return `Traitement en cours... (${status.progress || 0}%)`;
+      baseMessage = `Traitement en cours... (${status.progress || 0}%)`;
+      break;
     case "COMPLETED":
-      return "Réconciliation terminée";
+      baseMessage = "Réconciliation terminée";
+      break;
     case "ERROR":
-      return status.error || "Erreur lors de la réconciliation";
+      baseMessage = status.error || "Erreur lors de la réconciliation";
+      break;
     default:
-      return "Statut inconnu";
+      baseMessage = "Statut inconnu";
+      break;
   }
+
+  // Ajouter le message du backend s'il est disponible
+  if (status.message) {
+    return `${baseMessage} - ${status.message}`;
+  }
+
+  return baseMessage;
 };
 
 // Télécharger le fichier XLSX de réconciliation
@@ -218,19 +326,8 @@ export const downloadReconciliationFile = async (
   fileName: string
 ) => {
   try {
-    const token = getAuthToken();
-    const response = await fetch(`${API_URL}${downloadUrl}`, {
-      headers: {
-        ...(token && { Authorization: `Bearer ${token}` }),
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Erreur lors du téléchargement du fichier");
-    }
-
     // Créer un blob à partir de la réponse
-    const blob = await response.blob();
+    const blob = await apiRequest(downloadUrl, "GET");
 
     // Créer un lien de téléchargement temporaire
     const url = window.URL.createObjectURL(blob);
@@ -250,12 +347,203 @@ export const downloadReconciliationFile = async (
     return { success: true };
   } catch (error) {
     console.error("Erreur téléchargement:", error);
+    if (isHttpError(error)) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "Erreur lors du téléchargement",
+      message: "Erreur lors du téléchargement",
     };
+  }
+};
+
+// === NOUVELLES FONCTIONS POUR LE SYSTÈME DE GESTION ===
+
+// Récupérer toutes les réconciliations
+export const getAllReconciliations = async (): Promise<
+  ReconciliationSummary[]
+> => {
+  try {
+    return await apiRequest("/facturation/reconciliations", "GET");
+  } catch (error) {
+    console.error("Erreur réconciliations:", error);
+    return [];
+  }
+};
+
+// Récupérer les détails d'une réconciliation
+export const getReconciliationDetails = async (
+  reconciliationId: string
+): Promise<ReconciliationDetails | null> => {
+  try {
+    return await apiRequest(
+      `/facturation/reconciliations/${reconciliationId}`,
+      "GET"
+    );
+  } catch (error) {
+    console.error("Erreur détails réconciliation:", error);
+    if (isHttpError(error) && error.status === 404) {
+      return null;
+    }
+    return null;
+  }
+};
+
+// === NOUVELLES FONCTIONS POUR LA MODIFICATION DES CORRESPONDANCES ===
+
+// Modifier une correspondance existante
+export const updateMatch = async (
+  reconciliationId: string,
+  matchId: string,
+  updateData: MatchUpdateRequest
+): Promise<DetailedReconciliationMatch | null> => {
+  try {
+    return await apiRequest(
+      `/facturation/reconciliations/${reconciliationId}/matches/${matchId}`,
+      "PUT",
+      undefined,
+      updateData
+    );
+  } catch (error) {
+    console.error("Erreur modification correspondance:", error);
+    return null;
+  }
+};
+
+// Créer une nouvelle correspondance manuelle
+export const createMatch = async (
+  reconciliationId: string,
+  createData: MatchCreateRequest
+): Promise<DetailedReconciliationMatch | null> => {
+  try {
+    return await apiRequest(
+      `/facturation/reconciliations/${reconciliationId}/matches`,
+      "POST",
+      undefined,
+      createData
+    );
+  } catch (error) {
+    console.error("Erreur création correspondance:", error);
+    return null;
+  }
+};
+
+// Supprimer une correspondance
+export const deleteMatch = async (
+  reconciliationId: string,
+  matchId: string
+): Promise<boolean> => {
+  try {
+    await apiRequest(
+      `/facturation/reconciliations/${reconciliationId}/matches/${matchId}`,
+      "DELETE"
+    );
+    return true;
+  } catch (error) {
+    console.error("Erreur suppression correspondance:", error);
+    return false;
+  }
+};
+
+// Obtenir des suggestions pour une facture
+export const getMatchSuggestions = async (
+  reconciliationId: string,
+  invoiceId?: string
+): Promise<MatchSuggestion[]> => {
+  try {
+    let endpoint = `/facturation/reconciliations/${reconciliationId}/suggestions`;
+    if (invoiceId) {
+      endpoint += `?invoiceId=${invoiceId}`;
+    }
+
+    return await apiRequest(endpoint, "GET");
+  } catch (error) {
+    console.error("Erreur suggestions:", error);
+    return [];
+  }
+};
+
+// Résoudre les correspondances multiples
+export const resolveMultipleMatches = async (
+  reconciliationId: string,
+  resolutionData: MultipleResolutionRequest
+): Promise<{ results: MatchModificationResult[] } | null> => {
+  try {
+    return await apiRequest(
+      `/facturation/reconciliations/${reconciliationId}/resolve-multiple`,
+      "POST",
+      undefined,
+      resolutionData
+    );
+  } catch (error) {
+    console.error("Erreur résolution multiples:", error);
+    return null;
+  }
+};
+
+// Valider une correspondance
+export const validateMatch = async (
+  reconciliationId: string,
+  matchId: string,
+  notes?: string[]
+): Promise<DetailedReconciliationMatch | null> => {
+  try {
+    const updateData: MatchValidationRequest = {
+      action: "validate",
+      notes: notes,
+    };
+
+    return await apiRequest(
+      `/facturation/reconciliations/${reconciliationId}/matches/${matchId}/validate`,
+      "POST",
+      undefined,
+      updateData
+    );
+  } catch (error) {
+    console.error("Erreur validation correspondance:", error);
+    return null;
+  }
+};
+
+// Rejeter une correspondance
+export const rejectMatch = async (
+  reconciliationId: string,
+  matchId: string,
+  notes?: string[]
+): Promise<DetailedReconciliationMatch | null> => {
+  try {
+    const updateData: MatchValidationRequest = {
+      action: "reject",
+      notes: notes,
+    };
+
+    return await apiRequest(
+      `/facturation/reconciliations/${reconciliationId}/matches/${matchId}/reject`,
+      "POST",
+      undefined,
+      updateData
+    );
+  } catch (error) {
+    console.error("Erreur rejet correspondance:", error);
+    return null;
+  }
+};
+
+// Supprimer une réconciliation
+export const deleteReconciliation = async (
+  reconciliationId: string
+): Promise<boolean> => {
+  try {
+    await apiRequest(
+      `/facturation/reconciliations/${reconciliationId}`,
+      "DELETE"
+    );
+    return true;
+  } catch (error) {
+    console.error("Erreur suppression réconciliation:", error);
+    return false;
   }
 };
