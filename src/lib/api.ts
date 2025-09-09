@@ -187,111 +187,8 @@ export const getReconciliationResult = async (
   }
 };
 
-// Polling pour suivre l'évolution d'une réconciliation
-export const pollReconciliationStatus = (
-  reconciliationId: string,
-  onStatusUpdate: (status: any) => void,
-  onComplete: (result: any) => void,
-  onError: (error: string) => void
-): (() => void) => {
-  let timeoutId: NodeJS.Timeout | null = null;
-  let isActive = true;
-
-  const poll = async () => {
-    if (!isActive) return;
-
-    try {
-      const status = await getReconciliationStatus(reconciliationId);
-
-      if (!status) {
-        if (isActive) onError("Réconciliation non trouvée");
-        return;
-      }
-
-      if (isActive) onStatusUpdate(status);
-
-      if (status.status === "COMPLETED") {
-        const result = await getReconciliationResult(reconciliationId);
-        if (result && isActive) {
-          onComplete(result);
-        }
-        return;
-      }
-
-      if (status.status === "ERROR") {
-        if (isActive)
-          onError(status.error || "Erreur lors de la réconciliation");
-        return;
-      }
-
-      // Continue le polling si en cours
-      if (status.status === "PENDING" || status.status === "PROCESSING") {
-        if (isActive) {
-          timeoutId = setTimeout(poll, 5000); // Poll toutes les 5 secondes pour réduire la charge
-        }
-      }
-    } catch (error) {
-      if (isActive) {
-        onError(
-          error instanceof Error ? error.message : "Erreur lors du suivi"
-        );
-      }
-    }
-  };
-
-  // Démarrage du polling
-  poll();
-
-  // Retourner la fonction d'annulation
-  return () => {
-    isActive = false;
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
-    }
-  };
-};
-
-// Version Promise pour un usage plus simple avec support d'annulation
-export const pollReconciliationStatusAsync = (
-  reconciliationId: string,
-  onProgress?: (status: {
-    status: string;
-    progress?: number;
-    message?: string;
-  }) => void
-): { promise: Promise<any>; cancel: () => void } => {
-  let cancelPolling: (() => void) | null = null;
-
-  const promise = new Promise((resolve, reject) => {
-    cancelPolling = pollReconciliationStatus(
-      reconciliationId,
-      (status) => {
-        if (onProgress) {
-          onProgress({
-            status: status.status.toLowerCase(),
-            progress: status.progress,
-            message: getStatusMessage(status),
-          });
-        }
-      },
-      (result) => resolve(result),
-      (error) => reject(new Error(error))
-    );
-  });
-
-  return {
-    promise,
-    cancel: () => {
-      if (cancelPolling) {
-        cancelPolling();
-      }
-    },
-  };
-};
-
 // Helper pour convertir le statut en message
-const getStatusMessage = (status: any): string => {
+export const getStatusMessage = (status: any): string => {
   // Message de base généré par le frontend
   let baseMessage = "";
   switch (status.status) {
@@ -312,12 +209,8 @@ const getStatusMessage = (status: any): string => {
       break;
   }
 
-  // Ajouter le message du backend s'il est disponible
-  if (status.message) {
-    return `${baseMessage} - ${status.message}`;
-  }
-
-  return baseMessage;
+  // Si le backend envoie un message, l'utiliser en priorité
+  return status.message || baseMessage;
 };
 
 // Télécharger le fichier XLSX de réconciliation

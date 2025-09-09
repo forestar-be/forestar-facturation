@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import FileUpload from "@/components/ui/FileUpload";
 import ReconciliationProgress from "@/components/ReconciliationProgress";
 import { validateCSVFile } from "@/lib/csvUtils";
-import { uploadFiles, pollReconciliationStatusAsync } from "@/lib/api";
+import { uploadFiles, getReconciliationStatus, getReconciliationResult, getStatusMessage } from "@/lib/api";
 import { ReconciliationStorage } from "@/lib/reconciliationStorage";
 import { FileText, Play, RefreshCw } from "lucide-react";
 
@@ -45,8 +45,8 @@ export default function ReconciliationDashboard() {
 
   const [hasActiveReconciliation, setHasActiveReconciliation] = useState(false);
 
-  // Référence pour pouvoir annuler le polling
-  const [cancelPolling, setCancelPolling] = useState<(() => void) | null>(null);
+  // Ref pour stocker l'ID du timeout de polling
+  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Vérifier s'il y a une réconciliation en cours au chargement
   useEffect(() => {
@@ -68,60 +68,94 @@ export default function ReconciliationDashboard() {
       setFileNames({ invoices: "", transactions: "" });
 
       // Reprendre le polling
-      continuePolling(activeState.reconciliationId);
+      startPolling(activeState.reconciliationId);
     }
 
     // Cleanup: arrêter le polling quand le composant est démonté
     return () => {
-      if (cancelPolling) {
-        cancelPolling();
-        setCancelPolling(null);
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
+        pollingTimeoutRef.current = null;
       }
     };
-  }, [cancelPolling]);
+  }, []);
 
-  const continuePolling = async (reconciliationId: string) => {
+  // Fonction de polling simple
+  const startPolling = async (reconciliationId: string) => {
     try {
-      const { promise, cancel } = pollReconciliationStatusAsync(
-        reconciliationId,
-        (status) => {
-          setUploadProgress({
-            status: status.status,
-            progress: status.progress || 0,
-            message: status.message || "Traitement en cours...",
-          });
+      const status = await getReconciliationStatus(reconciliationId);
 
-          // Mettre à jour le localStorage
-          ReconciliationStorage.updateStatus(
-            status.status.toUpperCase() as any,
-            status.progress || 0,
-            status.message
-          );
-        }
+      if (!status) {
+        setErrors((prev) => ({
+          ...prev,
+          reconciliation: "Réconciliation non trouvée",
+        }));
+        stopPolling();
+        return;
+      }
+
+      // Mettre à jour l'interface
+      setUploadProgress({
+        status: status.status.toLowerCase(),
+        progress: status.progress || 0,
+        message: getStatusMessage(status),
+      });
+
+      // Mettre à jour le localStorage
+      ReconciliationStorage.updateStatus(
+        status.status.toUpperCase() as any,
+        status.progress || 0,
+        getStatusMessage(status)
       );
 
-      // Stocker la fonction d'annulation
-      setCancelPolling(() => cancel);
+      // Vérifier si terminé
+      if (status.status === "COMPLETED") {
+        const result = await getReconciliationResult(reconciliationId);
+        stopPolling();
+        
+        // Rediriger vers la page de détails
+        if (result?.reconciliationId || reconciliationId) {
+          router.push(`/reconciliations/${result?.reconciliationId || reconciliationId}`);
+        } else {
+          router.push("/reconciliations");
+        }
+        return;
+      }
 
-      const result = await promise;
+      if (status.status === "ERROR") {
+        setErrors((prev) => ({
+          ...prev,
+          reconciliation: status.error || "Erreur lors de la réconciliation",
+        }));
+        stopPolling();
+        return;
+      }
 
-      setUploadProgress(null);
-      setHasActiveReconciliation(false);
-      ReconciliationStorage.clearState();
-      setCancelPolling(null);
+      // Continuer le polling si en cours
+      if (status.status === "PENDING" || status.status === "PROCESSING") {
+        pollingTimeoutRef.current = setTimeout(() => {
+          startPolling(reconciliationId);
+        }, 5000);
+      }
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
-        reconciliation:
-          "Erreur lors de la réconciliation:\n" + (error as Error).message,
+        reconciliation: "Erreur lors du suivi: " + (error as Error).message,
       }));
-      setUploadProgress(null);
-      setHasActiveReconciliation(false);
-      ReconciliationStorage.clearState();
-      setCancelPolling(null);
-    } finally {
-      setLoadingStates((prev) => ({ ...prev, reconciliation: false }));
+      stopPolling();
     }
+  };
+
+  // Fonction pour arrêter le polling
+  const stopPolling = () => {
+    if (pollingTimeoutRef.current) {
+      clearTimeout(pollingTimeoutRef.current);
+      pollingTimeoutRef.current = null;
+    }
+    setUploadProgress(null);
+    setHasActiveReconciliation(false);
+    setLoadingStates((prev) => ({ ...prev, reconciliation: false }));
+    ReconciliationStorage.clearState();
   };
 
   const handleInvoiceFileSelect = async (file: File) => {
@@ -206,56 +240,15 @@ export default function ReconciliationDashboard() {
         message: "Traitement des fichiers en cours...",
       });
 
-      // Polling du statut
-      const { promise, cancel } = pollReconciliationStatusAsync(
-        uploadResult.reconciliationId,
-        (status) => {
-          setUploadProgress({
-            status: status.status,
-            progress: status.progress || 0,
-            message: status.message || "Traitement en cours...",
-          });
-
-          // Mettre à jour le localStorage
-          ReconciliationStorage.updateStatus(
-            status.status.toUpperCase() as any,
-            status.progress || 0,
-            status.message
-          );
-        }
-      );
-
-      // Stocker la fonction d'annulation
-      setCancelPolling(() => cancel);
-
-      const result = await promise;
-
-      // Rediriger vers la page de détails de la réconciliation
-      if (result?.reconciliationId || uploadResult.reconciliationId) {
-        router.push(
-          `/reconciliations/${result?.reconciliationId || uploadResult.reconciliationId}`
-        );
-      } else {
-        // En cas d'erreur (pas d'ID), rediriger vers la liste des réconciliations
-        router.push("/reconciliations");
-      }
-
-      setUploadProgress(null);
-      setHasActiveReconciliation(false);
-      ReconciliationStorage.clearState();
-      setCancelPolling(null);
+      // Démarrer le polling
+      startPolling(uploadResult.reconciliationId);
     } catch (error) {
       setErrors((prev) => ({
         ...prev,
         reconciliation:
           "Erreur lors de la réconciliation:\n" + (error as Error).message,
       }));
-      setUploadProgress(null);
-      setHasActiveReconciliation(false);
-      ReconciliationStorage.clearState();
-      setCancelPolling(null);
-    } finally {
-      setLoadingStates((prev) => ({ ...prev, reconciliation: false }));
+      stopPolling();
     }
   };
 
