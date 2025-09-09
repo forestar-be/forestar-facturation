@@ -112,7 +112,7 @@ export default function FileUpload({
                     e.stopPropagation();
                     clearFile();
                   }}
-                  className="text-gray-400 hover:text-red-500"
+                  className="cursor-pointer text-gray-400 hover:text-red-500"
                 >
                   <X className="h-4 w-4" />
                 </button>
