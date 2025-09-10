@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Search, Filter, Plus, ChevronDown } from "lucide-react";
+import { Search, Filter, Plus, ChevronDown, Download } from "lucide-react";
 
 interface ReconciliationFiltersProps {
   searchTerm: string;
@@ -10,6 +10,7 @@ interface ReconciliationFiltersProps {
   onSearchChange: (searchTerm: string) => void;
   onFiltersChange: (selectedFilters: string[]) => void;
   onCreateMatch: () => void;
+  onExportExcel: () => void;
 }
 
 export default function ReconciliationFilters({
@@ -21,6 +22,7 @@ export default function ReconciliationFilters({
   onSearchChange,
   onFiltersChange,
   onCreateMatch,
+  onExportExcel,
 }: ReconciliationFiltersProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -155,13 +157,22 @@ export default function ReconciliationFilters({
         <h3 className="text-lg leading-6 font-medium text-gray-900">
           Filtres des correspondances
         </h3>
-        <button
-          onClick={onCreateMatch}
-          className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nouvelle correspondance
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={onExportExcel}
+            className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export Excel
+          </button>
+          <button
+            onClick={onCreateMatch}
+            className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle correspondance
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">

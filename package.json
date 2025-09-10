@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
+    "@types/xlsx": "^0.0.35",
     "flowbite": "^3.1.2",
     "flowbite-react": "^0.12.8",
     "lucide-react": "^0.522.0",
@@ -23,6 +24,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.58.1",
+    "xlsx": "^0.18.5",
     "zod": "^3.25.67"
   },
   "devDependencies": {

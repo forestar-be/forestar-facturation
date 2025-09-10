@@ -11,6 +11,8 @@ import ReconciliationFilters from "@/components/ReconciliationFilters";
 import MatchesTable from "@/components/MatchesTable";
 import Pagination from "@/components/Pagination";
 import FileInfo from "@/components/FileInfo";
+import ExportWarningModal from "@/components/ExportWarningModal";
+import ExportLoadingModal from "@/components/ExportLoadingModal";
 import { useReconciliationDetail } from "@/hooks/useReconciliationDetail";
 import { useReconciliationFilters } from "@/hooks/useReconciliationFilters";
 
@@ -60,6 +62,15 @@ export default function ReconciliationDetailPage() {
     handleCloseMultipleMatchResolver,
     handleResolveMultipleMatches,
     handleSort,
+    handleExportExcel,
+    showExportWarning,
+    setShowExportWarning,
+    showExportLoading,
+    exportProgress,
+    exportStep,
+    performExport,
+    hasActiveFilters,
+    hasActiveSort,
   } = useReconciliationDetail(reconciliationId);
 
   // Utiliser le hook pour les filtres et pagination
@@ -143,6 +154,7 @@ export default function ReconciliationDetailPage() {
                   onSearchChange={setSearchTerm}
                   onFiltersChange={setSelectedFilters}
                   onCreateMatch={() => setShowCreateMatchModal(true)}
+                  onExportExcel={handleExportExcel}
                 />
 
                 {/* Statistiques rapides */}
@@ -260,6 +272,22 @@ export default function ReconciliationDetailPage() {
           />
         )}
       </main>
+
+      {/* Modals d'export Excel */}
+      <ExportWarningModal
+        isOpen={showExportWarning}
+        onClose={() => setShowExportWarning(false)}
+        onConfirm={performExport}
+        hasFilters={hasActiveFilters}
+        searchTerm={searchTerm}
+        selectedFilters={selectedFilters}
+      />
+
+      <ExportLoadingModal
+        isOpen={showExportLoading}
+        progress={exportProgress}
+        currentStep={exportStep}
+      />
     </div>
   );
 }
