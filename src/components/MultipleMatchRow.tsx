@@ -103,13 +103,18 @@ export default function MultipleMatchRow({
         </div>
       </td>
       <td className="px-6 py-4">
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-          <AlertTriangle className="h-3 w-3 mr-1" />
-          Multiple
-        </span>
+        <div className="flex flex-col space-y-1">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            Multiple
+          </span>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+            Action requise
+          </span>
+        </div>
       </td>
       <td className="px-6 py-4">
-        <div className="text-sm text-orange-600">Action requise</div>
+        <div className="text-sm text-orange-600">-</div>
       </td>
       <td className="px-6 py-4">
         <button

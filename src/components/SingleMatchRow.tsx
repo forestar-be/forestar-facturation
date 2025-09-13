@@ -4,6 +4,11 @@ import { DetailedReconciliationMatch } from "@/types";
 import {
   getMatchTypeLabel,
   getMatchTypeColor,
+  getMatchTypeOnly,
+  getValidationStatusLabel,
+  getValidationStatusColor,
+  getMatchTypeOnlyColor,
+  getValidationStatusChipColor,
 } from "@/lib/reconciliationUtils";
 import TransactionCell from "./TransactionCell";
 
@@ -78,17 +83,19 @@ export default function SingleMatchRow({
       <td className="px-6 py-3">
         <div className="flex flex-col space-y-1">
           <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMatchTypeColor(
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMatchTypeOnlyColor(
               match.matchType,
-              match.validationStatus,
               match.isManualMatch
             )}`}
           >
-            {getMatchTypeLabel(
-              match.matchType,
-              match.validationStatus,
-              match.isManualMatch
-            )}
+            {getMatchTypeOnly(match.matchType, match.isManualMatch)}
+          </span>
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getValidationStatusChipColor(
+              match.validationStatus
+            )}`}
+          >
+            {getValidationStatusLabel(match.validationStatus)}
           </span>
         </div>
       </td>

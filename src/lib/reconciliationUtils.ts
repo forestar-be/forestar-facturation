@@ -52,6 +52,106 @@ export const getMatchTypeLabel = (
   }
 };
 
+// Nouvelle fonction pour obtenir uniquement le type de correspondance
+export const getMatchTypeOnly = (
+  matchType: string,
+  isManualMatch?: boolean
+) => {
+  if (isManualMatch) {
+    return "Manuel";
+  }
+
+  switch (matchType) {
+    case "EXACT_REF":
+      return "Référence exacte";
+    case "EXACT_AMOUNT":
+      return "Montant exact";
+    case "REFINED_AMOUNT":
+      return "Montant raffiné";
+    case "SIMPLE_NAME":
+      return "Nom exact";
+    case "FUZZY_NAME":
+      return "Nom approchant";
+    case "COMBINED":
+      return "Combiné";
+    case "NONE":
+      return "Non appariée";
+    default:
+      return "Inconnu";
+  }
+};
+
+// Nouvelle fonction pour obtenir uniquement le statut de validation
+export const getValidationStatusLabel = (validationStatus?: string) => {
+  switch (validationStatus) {
+    case "VALIDATED":
+      return "Validé";
+    case "REJECTED":
+      return "Rejeté";
+    case "PENDING":
+      return "En attente";
+    default:
+      return "En attente";
+  }
+};
+
+// Nouvelle fonction pour obtenir la couleur du statut de validation (texte seulement)
+export const getValidationStatusColor = (validationStatus?: string) => {
+  switch (validationStatus) {
+    case "VALIDATED":
+      return "text-emerald-600";
+    case "REJECTED":
+      return "text-rose-600";
+    case "PENDING":
+      return "text-yellow-600";
+    default:
+      return "text-yellow-600";
+  }
+};
+
+// Nouvelle fonction pour obtenir la couleur de chip du statut de validation
+export const getValidationStatusChipColor = (validationStatus?: string) => {
+  switch (validationStatus) {
+    case "VALIDATED":
+      return "bg-emerald-100 text-emerald-800";
+    case "REJECTED":
+      return "bg-rose-100 text-rose-800";
+    case "PENDING":
+      return "bg-yellow-100 text-yellow-800";
+    default:
+      return "bg-yellow-100 text-yellow-800";
+  }
+};
+
+// Nouvelle fonction pour obtenir la couleur du type uniquement
+export const getMatchTypeOnlyColor = (
+  matchType: string,
+  isManualMatch?: boolean
+) => {
+  if (isManualMatch) {
+    return "bg-purple-100 text-purple-800";
+  }
+
+  switch (matchType) {
+    case "EXACT_REF":
+      return "bg-green-100 text-green-800";
+    case "EXACT_AMOUNT":
+      return "bg-blue-100 text-blue-800";
+    case "REFINED_AMOUNT":
+      return "bg-teal-100 text-teal-800";
+    case "SIMPLE_NAME":
+      return "bg-indigo-100 text-indigo-800";
+    case "FUZZY_NAME":
+      return "bg-yellow-100 text-yellow-800";
+    case "COMBINED":
+      return "bg-purple-100 text-purple-800";
+    case "NONE":
+      return "bg-red-100 text-red-800";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
+};
+
 export const getMatchTypeColor = (
   matchType: string,
   validationStatus?: string,

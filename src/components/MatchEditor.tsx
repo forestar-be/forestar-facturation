@@ -34,6 +34,11 @@ import { useTransactionSearch } from "@/hooks/useDebounce";
 import {
   getMatchTypeColor,
   getMatchTypeLabel,
+  getMatchTypeOnly,
+  getValidationStatusLabel,
+  getValidationStatusColor,
+  getMatchTypeOnlyColor,
+  getValidationStatusChipColor,
 } from "@/lib/reconciliationUtils";
 
 interface MatchEditorProps {
@@ -441,25 +446,34 @@ export default function MatchEditor({
 
           {/* État actuel de la correspondance */}
           <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-3">
-              État actuel
-            </h3>
-            <div className="flex items-center space-x-4">
-              <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMatchTypeColor(
-                  match.matchType,
-                  match.validationStatus,
-                  match.isManualMatch
-                )}`}
-              >
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                {getMatchTypeLabel(
-                  match.matchType,
-                  match.validationStatus,
-                  match.isManualMatch
-                )}
-              </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <h3 className="text-lg font-medium text-gray-900">
+                  État actuel
+                </h3>
+                <div className="flex items-center space-x-2">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMatchTypeOnlyColor(
+                      match.matchType,
+                      match.isManualMatch
+                    )}`}
+                  >
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    {getMatchTypeOnly(match.matchType, match.isManualMatch)}
+                  </span>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getValidationStatusChipColor(
+                      match.validationStatus
+                    )}`}
+                  >
+                    {getValidationStatusLabel(match.validationStatus)}
+                  </span>
+                </div>
+              </div>
               <div className="flex items-center">
+                <span className="text-sm font-medium text-gray-600 mr-2">
+                  Confiance
+                </span>
                 <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
                   <div
                     className={`h-2 rounded-full ${
@@ -655,7 +669,8 @@ export default function MatchEditor({
                                   suggestions[0].matchType
                                 )}`}
                               >
-                                {suggestions[0].confidence.toFixed(0)}%
+                                Confiance {suggestions[0].confidence.toFixed(0)}
+                                %
                               </span>
                             </div>
                           </div>
@@ -722,7 +737,7 @@ export default function MatchEditor({
                                     suggestion.matchType
                                   )}`}
                                 >
-                                  {suggestion.confidence.toFixed(0)}%
+                                  Confiance {suggestion.confidence.toFixed(0)}%
                                 </span>
                               </div>
                             </div>
@@ -839,7 +854,7 @@ export default function MatchEditor({
                               suggestions[0].matchType
                             )}`}
                           >
-                            {suggestions[0].confidence.toFixed(0)}%
+                            Confiance {suggestions[0].confidence.toFixed(0)}%
                           </span>
                         </div>
                         {suggestions[0].transaction.dateComptable && (
