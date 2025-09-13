@@ -77,7 +77,7 @@ function SortDirectionToggle({
       type="button"
       onClick={onToggle}
       disabled={disabled}
-      className={`p-2 border border-l-0 border-gray-300 rounded-r-md focus:ring-blue-500 focus:border-blue-500 ${
+      className={`px-3 py-[10.8px] border border-l-0 border-gray-300 rounded-r-md focus:ring-blue-500 focus:border-blue-500 ${
         disabled
           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
           : "bg-white text-gray-700 hover:bg-gray-50 cursor-pointer"
@@ -176,7 +176,7 @@ function SortSelector({ sortConfig, onSortChange }: SortSelectorProps) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="cursor-pointer pl-10 pr-8 py-2 border border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500 bg-white text-left flex items-center justify-between w-64"
+        className="cursor-pointer pl-10 pr-8 py-[10.8px] border border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500 bg-white text-left flex items-center justify-between w-64"
       >
         <span className="truncate text-sm font-medium">
           {getCurrentSortLabel()}
