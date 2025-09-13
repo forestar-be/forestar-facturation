@@ -1,5 +1,157 @@
 import { useMemo } from "react";
 import { DetailedReconciliationMatch } from "@/types";
+import { SortConfig } from "@/components/SortSelector";
+
+// Fonction utilitaire pour appliquer le tri (copie de useReconciliationDetail)
+function applySorting(
+  items: any[],
+  sortConfig: SortConfig,
+  getTransactionFromMatch: (match: DetailedReconciliationMatch) => any,
+  getInvoiceFromMatch: (match: DetailedReconciliationMatch) => any
+) {
+  const sortedItems = [...items];
+
+  sortedItems.sort((a, b) => {
+    // Tri par défaut : validés toujours à la fin, reste par confiance
+    if (!sortConfig.field) {
+      // Séparer les validés des autres
+      const aIsValidated = isValidated(a, getTransactionFromMatch);
+      const bIsValidated = isValidated(b, getTransactionFromMatch);
+
+      // Si l'un est validé et l'autre non, mettre le validé à la fin
+      if (aIsValidated && !bIsValidated) return 1;
+      if (!aIsValidated && bIsValidated) return -1;
+
+      // Pour les non-validés OU les validés entre eux, trier par confiance
+      const aConfidence = getConfidenceValue(a, getTransactionFromMatch);
+      const bConfidence = getConfidenceValue(b, getTransactionFromMatch);
+
+      if (sortConfig.direction === "asc") {
+        return aConfidence - bConfidence;
+      } else {
+        return bConfidence - aConfidence;
+      }
+    }
+
+    // Tri personnalisé
+    let aValue: any;
+    let bValue: any;
+
+    switch (sortConfig.field) {
+      case "type":
+        aValue = a.sortValue || "";
+        bValue = b.sortValue || "";
+        break;
+      case "confidence":
+        aValue = getConfidenceValue(a, getTransactionFromMatch);
+        bValue = getConfidenceValue(b, getTransactionFromMatch);
+        break;
+      case "validated":
+        aValue = getValidationOrder(a, getTransactionFromMatch);
+        bValue = getValidationOrder(b, getTransactionFromMatch);
+        break;
+      case "amount":
+        aValue = getAmountValue(a, getInvoiceFromMatch);
+        bValue = getAmountValue(b, getInvoiceFromMatch);
+        break;
+      case "date":
+        aValue = getDateValue(a, getTransactionFromMatch);
+        bValue = getDateValue(b, getTransactionFromMatch);
+        break;
+      default:
+        return 0;
+    }
+
+    if (sortConfig.direction === "asc") {
+      return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+    } else {
+      return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+    }
+  });
+
+  return sortedItems;
+}
+
+// Fonction pour vérifier si un item est validé
+function isValidated(
+  item: any,
+  getTransactionFromMatch: (match: DetailedReconciliationMatch) => any
+): boolean {
+  if (item.type === "multiple") return false;
+  if (!item.match) return false;
+
+  const transaction = getTransactionFromMatch(item.match);
+  if (!transaction) return false;
+
+  return item.match.validationStatus === "VALIDATED";
+}
+
+// Fonction pour obtenir l'ordre de validation (3 = validé, 2 = en attente, 1 = rejeté, 0 = non matché)
+function getValidationOrder(
+  item: any,
+  getTransactionFromMatch: (match: DetailedReconciliationMatch) => any
+): number {
+  if (item.type === "multiple") return 0;
+  if (!item.match) return 0;
+
+  const transaction = getTransactionFromMatch(item.match);
+  if (!transaction) return 1; // Pas de transaction = rejeté
+
+  if (item.match.validationStatus === "VALIDATED") return 3;
+  if (item.match.validationStatus === "REJECTED") return 1;
+  return 2; // En attente
+}
+
+// Fonction pour obtenir l'ordre de validation pour le tri par défaut (validés à la fin)
+function getValidationOrderForDefault(
+  item: any,
+  getTransactionFromMatch: (match: DetailedReconciliationMatch) => any
+): number {
+  if (item.type === "multiple") return 0;
+  if (!item.match) return 0;
+
+  const transaction = getTransactionFromMatch(item.match);
+  if (!transaction) return 2; // Pas de transaction = rejeté
+
+  if (item.match.validationStatus === "VALIDATED") return 1; // Validé = plus bas (à la fin)
+  if (item.match.validationStatus === "REJECTED") return 2; // Rejeté = milieu
+  return 3; // En attente = plus haut (au début)
+}
+
+// Fonction pour obtenir la valeur de confiance
+function getConfidenceValue(
+  item: any,
+  getTransactionFromMatch: (match: DetailedReconciliationMatch) => any
+): number {
+  if (item.type === "multiple") return -1;
+  if (!item.match) return 0;
+
+  const transaction = getTransactionFromMatch(item.match);
+  if (item.match.isManualMatch && transaction) return 100;
+  if (item.match.validationStatus === "REJECTED" || !transaction) return 0;
+  if (item.match.validationStatus === "VALIDATED" && transaction) return 100;
+  return item.match.confidence || 0;
+}
+
+// Fonction pour obtenir la valeur du montant
+function getAmountValue(
+  item: any,
+  getInvoiceFromMatch: (match: DetailedReconciliationMatch) => any
+): number {
+  if (!item.match) return 0;
+  const invoice = getInvoiceFromMatch(item.match);
+  return invoice?.amount || 0;
+}
+
+// Fonction pour obtenir la valeur de date
+function getDateValue(
+  item: any,
+  getTransactionFromMatch: (match: DetailedReconciliationMatch) => any
+): string {
+  if (!item.match) return "";
+  const transaction = getTransactionFromMatch(item.match);
+  return transaction?.date || "";
+}
 
 interface DisplayItem {
   type: "single" | "multiple";
@@ -14,8 +166,7 @@ export function useReconciliationFilters(
   matches: DetailedReconciliationMatch[],
   searchTerm: string,
   selectedFilters: string[],
-  sortField: string | null,
-  sortDirection: "asc" | "desc",
+  sortConfig: SortConfig,
   currentPage: number,
   itemsPerPage: number,
   getInvoiceFromMatch: (match: DetailedReconciliationMatch) => any,
@@ -203,76 +354,12 @@ export function useReconciliationFilters(
     });
 
     // Appliquer le tri
-    if (sortField) {
-      items = [...items].sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
-
-        switch (sortField) {
-          case "type":
-            aValue = a.sortValue;
-            bValue = b.sortValue;
-            break;
-          case "confidence":
-            if (a.type === "multiple") {
-              aValue = -1;
-            } else {
-              // Si pas de transaction associée, confiance = 0 (même pour les correspondances manuelles)
-              const aTransaction = a.match
-                ? getTransactionFromMatch(a.match)
-                : null;
-              if (a.match?.isManualMatch && aTransaction) {
-                aValue = 100;
-              } else if (
-                a.match?.validationStatus === "REJECTED" ||
-                !aTransaction
-              ) {
-                aValue = 0;
-              } else if (
-                a.match?.validationStatus === "VALIDATED" &&
-                aTransaction
-              ) {
-                aValue = 100;
-              } else {
-                aValue = a.match?.confidence || 0;
-              }
-            }
-
-            if (b.type === "multiple") {
-              bValue = -1;
-            } else {
-              // Si pas de transaction associée, confiance = 0 (même pour les correspondances manuelles)
-              const bTransaction = b.match
-                ? getTransactionFromMatch(b.match)
-                : null;
-              if (b.match?.isManualMatch && bTransaction) {
-                bValue = 100;
-              } else if (
-                b.match?.validationStatus === "REJECTED" ||
-                !bTransaction
-              ) {
-                bValue = 0;
-              } else if (
-                b.match?.validationStatus === "VALIDATED" &&
-                bTransaction
-              ) {
-                bValue = 100;
-              } else {
-                bValue = b.match?.confidence || 0;
-              }
-            }
-            break;
-          default:
-            return 0;
-        }
-
-        if (sortDirection === "asc") {
-          return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-        } else {
-          return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-        }
-      });
-    }
+    items = applySorting(
+      items,
+      sortConfig,
+      getTransactionFromMatch,
+      getInvoiceFromMatch
+    );
 
     return items;
   }, [
@@ -281,8 +368,7 @@ export function useReconciliationFilters(
     availableFilterTypes,
     searchTerm,
     getInvoiceFromMatch,
-    sortField,
-    sortDirection,
+    sortConfig,
   ]);
 
   // Calculer le nombre total d'éléments

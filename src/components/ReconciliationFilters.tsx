@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Search, Filter, Plus, ChevronDown, Download } from "lucide-react";
+import SortSelectorWithDirection, { SortConfig } from "./SortSelector";
 
 interface ReconciliationFiltersProps {
   searchTerm: string;
@@ -7,8 +8,10 @@ interface ReconciliationFiltersProps {
   availableFilterTypes: string[];
   filterTypeCounts: Record<string, number>;
   totalItemsCount: number;
+  sortConfig: SortConfig;
   onSearchChange: (searchTerm: string) => void;
   onFiltersChange: (selectedFilters: string[]) => void;
+  onSortChange: (config: SortConfig) => void;
   onCreateMatch: () => void;
   onExportExcel: () => void;
 }
@@ -19,8 +22,10 @@ export default function ReconciliationFilters({
   availableFilterTypes,
   filterTypeCounts,
   totalItemsCount,
+  sortConfig,
   onSearchChange,
   onFiltersChange,
+  onSortChange,
   onCreateMatch,
   onExportExcel,
 }: ReconciliationFiltersProps) {
@@ -186,6 +191,11 @@ export default function ReconciliationFilters({
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
+
+        <SortSelectorWithDirection
+          sortConfig={sortConfig}
+          onSortChange={onSortChange}
+        />
 
         <div className="relative flex-shrink-0" ref={dropdownRef}>
           <Filter className="h-5 w-5 absolute left-3 top-3 text-gray-400 z-10" />

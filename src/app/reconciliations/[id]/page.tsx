@@ -39,8 +39,7 @@ export default function ReconciliationDetailPage() {
     setSearchTerm,
     selectedFilters,
     setSelectedFilters,
-    sortField,
-    sortDirection,
+    sortConfig,
     currentPage,
     setCurrentPage,
     itemsPerPage,
@@ -62,7 +61,7 @@ export default function ReconciliationDetailPage() {
     handleOpenMultipleMatchResolver,
     handleCloseMultipleMatchResolver,
     handleResolveMultipleMatches,
-    handleSort,
+    handleSortChange,
     handleExportExcel,
     showExportWarning,
     setShowExportWarning,
@@ -84,8 +83,7 @@ export default function ReconciliationDetailPage() {
     reconciliation?.matches || [],
     searchTerm,
     selectedFilters,
-    sortField,
-    sortDirection,
+    sortConfig,
     currentPage,
     itemsPerPage,
     getInvoiceFromMatch,
@@ -153,8 +151,10 @@ export default function ReconciliationDetailPage() {
                   availableFilterTypes={availableFilterTypes}
                   filterTypeCounts={filterTypeCounts}
                   totalItemsCount={totalItemsCount}
+                  sortConfig={sortConfig}
                   onSearchChange={setSearchTerm}
                   onFiltersChange={setSelectedFilters}
+                  onSortChange={handleSortChange}
                   onCreateMatch={() => setShowCreateMatchModal(true)}
                   onExportExcel={handleExportExcel}
                 />
@@ -183,11 +183,8 @@ export default function ReconciliationDetailPage() {
                 {/* Tableau des correspondances */}
                 <MatchesTable
                   displayItems={paginatedItems}
-                  sortField={sortField}
-                  sortDirection={sortDirection}
                   searchTerm={searchTerm}
                   getTransactionFromMatch={getTransactionFromMatch}
-                  onSort={handleSort}
                   onViewMatch={handleViewMatch}
                   onEditMatch={(match) => handleEditMatch(match, true)}
                   onValidateMatch={handleValidateMatch}

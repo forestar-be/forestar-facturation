@@ -15,11 +15,8 @@ interface DisplayItem {
 
 interface MatchesTableProps {
   displayItems: DisplayItem[];
-  sortField: string | null;
-  sortDirection: "asc" | "desc";
   searchTerm?: string;
   getTransactionFromMatch: (match: DetailedReconciliationMatch) => any;
-  onSort: (field: string) => void;
   onViewMatch: (match: DetailedReconciliationMatch) => void;
   onEditMatch: (match: DetailedReconciliationMatch) => void;
   onValidateMatch?: (match: DetailedReconciliationMatch) => void;
@@ -32,11 +29,8 @@ interface MatchesTableProps {
 
 export default function MatchesTable({
   displayItems,
-  sortField,
-  sortDirection,
   searchTerm,
   getTransactionFromMatch,
-  onSort,
   onViewMatch,
   onEditMatch,
   onValidateMatch,
@@ -54,11 +48,7 @@ export default function MatchesTable({
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
-        <MatchesTableHeader
-          sortField={sortField}
-          sortDirection={sortDirection}
-          onSort={onSort}
-        />
+        <MatchesTableHeader />
         <tbody className="bg-white divide-y divide-gray-200">
           {displayItems.map((item) => {
             if (item.type === "multiple") {
