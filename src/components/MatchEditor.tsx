@@ -179,10 +179,21 @@ export default function MatchEditor({
       setLoading(true);
       setError("");
 
+      // Vérifier si la transaction sélectionnée correspond à la suggestion automatique du système
+      // Pour les correspondances "NONE", il n'y a pas eu de suggestion automatique d'origine,
+      // donc même si on choisit la première suggestion, cela reste un choix manuel
+      // EXCEPTION: si matchType est "NONE" et qu'on sélectionne "aucune transaction",
+      // alors on confirme la décision automatique du système
+      const isAutomaticSuggestion =
+        (match.matchType !== "NONE" &&
+          suggestions.length > 0 &&
+          selectedTransactionId === suggestions[0].transaction.id) ||
+        (match.matchType === "NONE" && !selectedTransactionId);
+
       const updateData = {
         transactionId: selectedTransactionId || undefined,
         notes: notes.split("\n").filter((note) => note.trim()),
-        isManualMatch: true,
+        isManualMatch: !isAutomaticSuggestion,
       };
 
       const updatedMatch = await updateMatch(
@@ -630,6 +641,7 @@ export default function MatchEditor({
                 {/* Suggestion automatique prioritaire pour correspondances manuelles */}
                 {(match.isManualMatch ||
                   match.validationStatus === "REJECTED") &&
+                  match.matchType !== "NONE" &&
                   suggestions.length > 0 && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -693,17 +705,29 @@ export default function MatchEditor({
                   )}
 
                 {/* Autres suggestions */}
-                {suggestions.length > (match.isManualMatch ? 1 : 0) && (
+                {suggestions.length > 0 && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {match.isManualMatch
-                        ? "Autres suggestions"
-                        : "Suggestions"}{" "}
-                      ({suggestions.length - (match.isManualMatch ? 1 : 0)})
+                      {match.matchType === "NONE"
+                        ? "Suggestions"
+                        : match.isManualMatch
+                          ? "Autres suggestions"
+                          : "Suggestions"}{" "}
+                      (
+                      {match.matchType === "NONE"
+                        ? suggestions.length
+                        : suggestions.length - (match.isManualMatch ? 1 : 0)}
+                      )
                     </label>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
                       {suggestions
-                        .slice(match.isManualMatch ? 1 : 0)
+                        .slice(
+                          match.matchType === "NONE"
+                            ? 0
+                            : match.isManualMatch
+                              ? 1
+                              : 0
+                        )
                         .map((suggestion, index) => (
                           <div
                             key={index}
@@ -829,6 +853,7 @@ export default function MatchEditor({
                 {/* Affichage de la suggestion automatique si correspondance manuelle et qu'il y a des suggestions */}
                 {(match.isManualMatch ||
                   match.validationStatus === "REJECTED") &&
+                  match.matchType !== "NONE" &&
                   suggestions.length > 0 && (
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                       <div className="flex items-center mb-2">
@@ -896,30 +921,25 @@ export default function MatchEditor({
           </button>
 
           <div className="flex space-x-3">
-            {/* Boutons Valider/Rejeter pour les correspondances automatiques en attente */}
-            {!match.isManualMatch &&
-              match.validationStatus === "PENDING" &&
-              // Pour les correspondances avec transaction OU les correspondances automatiques de type NONE
-              (match.transactionId || match.matchType !== "NONE") && (
-                <>
-                  <button
-                    onClick={handleReject}
-                    disabled={loading}
-                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-rose-300 text-sm font-medium rounded-md text-rose-700 bg-rose-50 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Rejeter
-                  </button>
-                  <button
-                    onClick={handleValidate}
-                    disabled={loading}
-                    className="cursor-pointer inline-flex items-center px-4 py-2 border border-emerald-300 text-sm font-medium rounded-md text-emerald-700 bg-emerald-50 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50"
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    Valider
-                  </button>
-                </>
-              )}
+            {/* Boutons Valider/Rejeter - toujours affichés */}
+            <>
+              <button
+                onClick={handleReject}
+                disabled={loading}
+                className="cursor-pointer inline-flex items-center px-4 py-2 border border-rose-300 text-sm font-medium rounded-md text-rose-700 bg-rose-50 hover:bg-rose-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Rejeter
+              </button>
+              <button
+                onClick={handleValidate}
+                disabled={loading}
+                className="cursor-pointer inline-flex items-center px-4 py-2 border border-emerald-300 text-sm font-medium rounded-md text-emerald-700 bg-emerald-50 hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Valider
+              </button>
+            </>
 
             {isEditing && (
               <>

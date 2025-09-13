@@ -31,12 +31,8 @@ export default function SingleMatchRow({
   onValidate,
   onReject,
 }: SingleMatchRowProps) {
-  // Déterminer si les boutons Valider/Rejeter doivent être affichés
-  const shouldShowValidationButtons =
-    !match.isManualMatch &&
-    match.validationStatus === "PENDING" &&
-    // Pour les correspondances avec transaction OU les correspondances automatiques de type NONE
-    (match.transactionId || match.matchType !== "NONE");
+  // Les boutons Valider/Rejeter sont toujours affichés
+  const shouldShowValidationButtons = true;
   return (
     <tr key={match.id} className="hover:bg-gray-50">
       <td className="px-6 py-3">
@@ -169,7 +165,7 @@ export default function SingleMatchRow({
             </button>
           </div>
 
-          {/* Boutons Valider/Rejeter pour les correspondances automatiques en attente */}
+          {/* Boutons Valider/Rejeter - toujours affichés */}
           {shouldShowValidationButtons && onValidate && onReject && (
             <div className="flex space-x-2">
               <button
