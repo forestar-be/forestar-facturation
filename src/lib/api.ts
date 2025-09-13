@@ -440,3 +440,22 @@ export const deleteReconciliation = async (
     return false;
   }
 };
+
+// Mettre à jour le titre d'une réconciliation
+export const updateReconciliationTitle = async (
+  reconciliationId: string,
+  title: string
+): Promise<boolean> => {
+  try {
+    await apiRequest(
+      `/facturation/reconciliations/${reconciliationId}/title`,
+      "PUT",
+      undefined,
+      { title }
+    );
+    return true;
+  } catch (error) {
+    console.error("Erreur mise à jour titre:", error);
+    return false;
+  }
+};

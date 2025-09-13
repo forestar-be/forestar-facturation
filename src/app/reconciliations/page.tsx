@@ -9,6 +9,11 @@ import { getAllReconciliations } from "@/lib/api";
 import { deleteReconciliation } from "@/lib/api";
 import { ReconciliationSummary } from "@/types";
 import {
+  formatDate,
+  formatDuration,
+  getReconciliationDisplayTitle,
+} from "@/lib/reconciliationUtils";
+import {
   FileText,
   Calendar,
   Clock,
@@ -84,32 +89,6 @@ export default function ReconciliationsPage() {
       fetchReconciliations();
     }
   }, [isAuthenticated]);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("fr-FR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatDuration = (startTime: string, endTime?: string) => {
-    if (!endTime) return "-";
-
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const duration = Math.round((end.getTime() - start.getTime()) / 1000);
-
-    if (duration < 60) {
-      return `${duration}s`;
-    } else if (duration < 3600) {
-      return `${Math.round(duration / 60)}min`;
-    } else {
-      return `${Math.round(duration / 3600)}h`;
-    }
-  };
 
   const handleDeleteReconciliation = async (reconciliationId: string) => {
     if (
@@ -214,8 +193,10 @@ export default function ReconciliationsPage() {
                           <div className="ml-4">
                             <div className="flex items-center">
                               <div className="text-sm font-medium text-gray-900">
-                                Réconciliation du{" "}
-                                {formatDate(reconciliation.createdAt)}
+                                {getReconciliationDisplayTitle(
+                                  reconciliation.title,
+                                  reconciliation.createdAt
+                                )}
                               </div>
                               <span
                                 className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(reconciliation.status)}`}

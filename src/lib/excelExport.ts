@@ -19,6 +19,7 @@ interface ExportData {
   allDisplayItems: DisplayItem[];
   reconciliationId: string;
   reconciliationName: string;
+  reconciliationTitle?: string; // Titre personnalisé de la réconciliation
   reconciliationDate?: string; // Date de création de la réconciliation
   getTransactionFromMatch: (
     match: DetailedReconciliationMatch
@@ -229,7 +230,21 @@ export async function exportToExcel(
 
     const filterSuffix =
       data.searchTerm || data.selectedFilters?.length ? "_avec_filtres" : "";
-    const fileName = `Réconciliation_${dateStr}_${timeStr}${filterSuffix}.xlsx`;
+
+    // Utiliser le titre personnalisé s'il existe, sinon utiliser "Réconciliation" avec la date
+    let baseFileName: string;
+    if (data.reconciliationTitle && data.reconciliationTitle.trim()) {
+      // Nettoyer le titre pour le nom de fichier (enlever caractères spéciaux)
+      const cleanTitle = data.reconciliationTitle
+        .trim()
+        .replace(/[<>:"/\\|?*]/g, "_") // Remplacer caractères interdits par _
+        .replace(/\s+/g, "_"); // Remplacer espaces par _
+      baseFileName = `${cleanTitle}_${dateStr}_${timeStr}`;
+    } else {
+      baseFileName = `Réconciliation_${dateStr}_${timeStr}`;
+    }
+
+    const fileName = `${baseFileName}${filterSuffix}.xlsx`;
 
     // Écrire et télécharger le fichier
     XLSX.writeFile(workbook, fileName);

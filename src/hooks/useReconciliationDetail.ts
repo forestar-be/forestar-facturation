@@ -219,6 +219,18 @@ export function useReconciliationDetail(reconciliationId: string) {
     [reconciliation]
   );
 
+  const handleTitleUpdate = useCallback(
+    (newTitle: string) => {
+      if (reconciliation) {
+        setReconciliation({
+          ...reconciliation,
+          title: newTitle,
+        });
+      }
+    },
+    [reconciliation]
+  );
+
   const handleCreateMatch = useCallback(
     (newMatch: DetailedReconciliationMatch) => {
       if (reconciliation) {
@@ -575,6 +587,7 @@ export function useReconciliationDetail(reconciliationId: string) {
           allDisplayItems,
           reconciliationId,
           reconciliationName: `${reconciliation.invoicesFileName} - ${reconciliation.transactionsFileName}`,
+          reconciliationTitle: reconciliation.title,
           reconciliationDate: reconciliation.createdAt,
           getTransactionFromMatch,
           searchTerm,
@@ -653,6 +666,7 @@ export function useReconciliationDetail(reconciliationId: string) {
     handleMatchUpdated,
     handleMatchDeleted,
     handleCreateMatch,
+    handleTitleUpdate,
     handleValidateMatch,
     handleRejectMatch,
     handleOpenMultipleMatchResolver,

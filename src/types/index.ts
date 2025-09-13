@@ -104,6 +104,7 @@ export interface ReconciliationSettings {
 export interface ReconciliationSummary {
   id: string;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "ERROR";
+  title?: string;
   startTime: string;
   endTime?: string;
   invoicesFileName: string;
@@ -123,6 +124,7 @@ export interface ReconciliationSummary {
 export interface ReconciliationDetails {
   id: string;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "ERROR";
+  title?: string;
   startTime: string;
   endTime?: string;
   invoicesFileName: string;

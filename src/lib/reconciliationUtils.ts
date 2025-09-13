@@ -118,3 +118,25 @@ export const formatDuration = (startTime: string, endTime?: string) => {
     return `${Math.round(duration / 3600)}h`;
   }
 };
+
+// Capitalise la première lettre d'une chaîne
+export const capitalizeFirstLetter = (str: string) => {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+// Formate le titre d'affichage d'une réconciliation
+export const getReconciliationDisplayTitle = (
+  title?: string,
+  createdAt?: string
+) => {
+  if (title && title.trim()) {
+    return capitalizeFirstLetter(title.trim());
+  }
+  
+  if (createdAt) {
+    return `Réconciliation du ${formatDate(createdAt)}`;
+  }
+  
+  return "Réconciliation";
+};

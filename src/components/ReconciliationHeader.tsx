@@ -3,37 +3,65 @@ import { ArrowLeft, FileText, CreditCard, CheckCircle } from "lucide-react";
 import { ReconciliationDetails } from "@/types";
 import StatusIcon from "@/components/StatusIcon";
 import InfoModal from "./InfoModal";
+import TitleEditor from "./TitleEditor";
+import { updateReconciliationTitle } from "@/lib/api";
 import {
   getStatusLabel,
   formatDate,
   formatDuration,
+  getReconciliationDisplayTitle,
 } from "@/lib/reconciliationUtils";
 
 interface ReconciliationHeaderProps {
   reconciliation: ReconciliationDetails;
   onBack: () => void;
+  onTitleUpdate?: (newTitle: string) => void;
 }
 
 export default function ReconciliationHeader({
   reconciliation,
   onBack,
+  onTitleUpdate,
 }: ReconciliationHeaderProps) {
+  const handleTitleSave = async (newTitle: string): Promise<boolean> => {
+    try {
+      const success = await updateReconciliationTitle(
+        reconciliation.id,
+        newTitle
+      );
+      if (success && onTitleUpdate) {
+        onTitleUpdate(newTitle);
+      }
+      return success;
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du titre:", error);
+      return false;
+    }
+  };
+
+  const displayTitle = getReconciliationDisplayTitle(
+    reconciliation.title,
+    reconciliation.createdAt
+  );
   return (
     <div className="space-y-4">
       {/* Header avec titre à gauche et statistiques à droite */}
       <div className="flex items-start justify-between">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-4 flex-1 min-w-0 mr-4">
           <button
             onClick={onBack}
-            className="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            className="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Retour
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Réconciliation du {formatDate(reconciliation.createdAt)}
-            </h1>
+          <div className="flex-1 min-w-0">
+            <TitleEditor
+              title={displayTitle}
+              onSave={handleTitleSave}
+              placeholder="Entrez un titre pour cette réconciliation"
+              className="w-full"
+            />
             <div className="flex items-center mt-1">
               <StatusIcon status={reconciliation.status} />
               <span className="ml-2 text-sm text-gray-600">

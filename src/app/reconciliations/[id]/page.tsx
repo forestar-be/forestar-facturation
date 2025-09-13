@@ -56,6 +56,7 @@ export default function ReconciliationDetailPage() {
     handleMatchUpdated,
     handleMatchDeleted,
     handleCreateMatch,
+    handleTitleUpdate,
     handleValidateMatch,
     handleRejectMatch,
     handleOpenMultipleMatchResolver,
@@ -138,6 +139,7 @@ export default function ReconciliationDetailPage() {
           <ReconciliationHeader
             reconciliation={reconciliation}
             onBack={() => router.push("/reconciliations")}
+            onTitleUpdate={handleTitleUpdate}
           />
 
           {/* Liste des correspondances avec filtres intégrés */}
