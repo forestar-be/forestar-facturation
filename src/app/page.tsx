@@ -1,22 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
-import { useAuth } from "@/lib/auth";
-import { useRouter } from "next/navigation";
+import { useAuth, useRequireAuth } from "@/lib/auth";
+import AccessDenied from "@/components/AccessDenied";
 import Header from "@/components/Header";
 import ReconciliationDashboard from "@/components/ReconciliationDashboard";
 
 export default function HomePage() {
-  const { isAuthenticated, isLoading } = useAuth();
-  const router = useRouter();
+  // `useRequireAuth` remplace la redirection écrite à la main : en mode SSO,
+  // l'absence de session part vers l'IdP plutôt que vers `/connexion`.
+  const { ready, denied } = useRequireAuth();
+  const { logOut } = useAuth();
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/connexion");
-    }
-  }, [isAuthenticated, isLoading, router]);
+  if (denied) return <AccessDenied onLogout={logOut} />;
 
-  if (isLoading || !isAuthenticated) {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

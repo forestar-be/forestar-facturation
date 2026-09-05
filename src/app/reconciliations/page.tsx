@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth";
+import { useAuth, useRequireAuth } from "@/lib/auth";
+import AccessDenied from "@/components/AccessDenied";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import StatusIcon from "@/components/StatusIcon";
@@ -56,7 +57,8 @@ const getStatusColor = (status: string) => {
 };
 
 export default function ReconciliationsPage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { ready, denied } = useRequireAuth();
+  const { logOut } = useAuth();
   const router = useRouter();
   const [reconciliations, setReconciliations] = useState<
     ReconciliationSummary[]
@@ -64,12 +66,6 @@ export default function ReconciliationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/connexion");
-    }
-  }, [isAuthenticated, isLoading, router]);
 
   useEffect(() => {
     const fetchReconciliations = async () => {
@@ -85,10 +81,10 @@ export default function ReconciliationsPage() {
       }
     };
 
-    if (isAuthenticated) {
+    if (ready) {
       fetchReconciliations();
     }
-  }, [isAuthenticated]);
+  }, [ready]);
 
   const handleDeleteReconciliation = async (reconciliationId: string) => {
     if (
@@ -119,7 +115,9 @@ export default function ReconciliationsPage() {
     }
   };
 
-  if (isLoading || !isAuthenticated) {
+  if (denied) return <AccessDenied onLogout={logOut} />;
+
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>

@@ -11,7 +11,10 @@ import {
   DetailedReconciliationMatch,
 } from "@/types";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { API_URL, getSessionClient, SSO_ENABLED } from "./session";
+
+/** Méthodes sans effet de bord : elles ne portent pas de jeton CSRF. */
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 export class HttpError extends Error {
   constructor(
@@ -29,8 +32,10 @@ export const isHttpError = (error: any): error is HttpError => {
   return error && error.name === "HttpError";
 };
 
-// Récupère le token d'authentification depuis le localStorage
+// Récupère le token d'authentification depuis le localStorage.
+// En mode SSO il n'y a rien à y lire : aucun jeton n'atteint le navigateur.
 const getAuthToken = () => {
+  if (SSO_ENABLED) return null;
   if (typeof window === "undefined") return null;
   return localStorage.getItem("facturation_token");
 };
@@ -45,14 +50,25 @@ const apiRequest = async (
 ) => {
   const authToken = token || getAuthToken();
 
-  const headers: HeadersInit = {
+  // En mode SSO, `authToken` est nul et l'en-tête `Authorization` disparaît :
+  // l'authentification passe par le cookie `__Host-`, que le navigateur envoie
+  // seul, plus un jeton CSRF sur chaque mutation.
+  const headers: Record<string, string> = {
     ...(authToken && { Authorization: `Bearer ${authToken}` }),
-    ...additionalHeaders,
+    ...(additionalHeaders as Record<string, string>),
   };
+
+  if (SSO_ENABLED && !SAFE_METHODS.has(method.toUpperCase())) {
+    const csrf = getSessionClient().getState().csrfToken;
+    if (csrf) headers["X-CSRF-Token"] = csrf;
+  }
 
   const options: RequestInit = {
     method,
     headers,
+    // Sans `credentials`, le navigateur n'envoie pas le cookie à une API
+    // d'une autre origine, et toute requête revient 401.
+    ...(SSO_ENABLED ? { credentials: "include" as RequestCredentials } : {}),
   };
 
   if (body) {
@@ -77,7 +93,15 @@ const apiRequest = async (
     console.warn("Error parsing response", response, error);
   }
 
+  // En mode SSO, une session finie se manifeste par un 401 : la session
+  // serveur est expirée ou révoquée, et la seule réaction utile est de
+  // repartir vers l'IdP.
+  if (SSO_ENABLED && response.status === 401) {
+    getSessionClient().login();
+  }
+
   if (
+    !SSO_ENABLED &&
     response.status === 403 &&
     data?.message &&
     data?.message === "jwt expired"
