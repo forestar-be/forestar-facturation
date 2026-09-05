@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useAuth, useRequireAuth } from "@/lib/auth";
 import {
   getReconciliationDetails,
   updateMatch,
@@ -166,7 +165,9 @@ function getDateValue(
 
 export function useReconciliationDetail(reconciliationId: string) {
   const { isAuthenticated, isLoading: isLoadingAuth } = useAuth();
-  const router = useRouter();
+  // La redirection est portée par `useRequireAuth` : en mode SSO, l'absence de
+  // session part vers l'IdP, pas vers `/connexion`.
+  useRequireAuth();
 
   const [reconciliation, setReconciliation] =
     useState<ReconciliationDetails | null>(null);
@@ -203,13 +204,6 @@ export function useReconciliationDetail(reconciliationId: string) {
   const [showExportLoading, setShowExportLoading] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const [exportStep, setExportStep] = useState("");
-
-  // Vérification de l'authentification
-  useEffect(() => {
-    if (!isLoadingAuth && !isAuthenticated) {
-      router.push("/connexion");
-    }
-  }, [isAuthenticated, isLoadingAuth, router]);
 
   // Chargement des données
   useEffect(() => {

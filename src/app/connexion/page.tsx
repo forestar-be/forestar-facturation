@@ -1,10 +1,40 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import Image from "next/image";
+
+/**
+ * En mode SSO, cette page n'affiche plus de formulaire : les identifiants sont
+ * saisis chez Zitadel. La route reste valide — d'anciens liens et favoris y
+ * mènent — et repart aussitôt vers l'IdP.
+ */
+function SsoLoginRedirect() {
+  const { loginAction, isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+  const started = useRef(false);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (isAuthenticated) {
+      router.replace("/");
+      return;
+    }
+    if (started.current) return;
+    started.current = true;
+    void loginAction({ username: "", password: "" }, "/");
+  }, [isAuthenticated, isLoading, loginAction, router]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <p className="text-gray-600">
+        Redirection vers l&apos;authentification Forestar…
+      </p>
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -15,7 +45,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const { loginAction, isAuthenticated, isLoading } = useAuth();
+  const { loginAction, isAuthenticated, isLoading, ssoEnabled } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -48,6 +78,9 @@ export default function LoginPage() {
       [name]: value,
     }));
   };
+
+  // Après les hooks : leur ordre doit rester identique d'un rendu à l'autre.
+  if (ssoEnabled) return <SsoLoginRedirect />;
 
   if (isLoading || isAuthenticated) {
     return (
