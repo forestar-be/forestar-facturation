@@ -4,9 +4,10 @@ import { useAuth } from "@/lib/auth";
 import { LogOut, History, Home } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
+import AccountMenu from "@/components/AccountMenu";
 
 export default function Header() {
-  const { logOut, isAuthenticated } = useAuth();
+  const { logOut, isAuthenticated, ssoEnabled } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -62,13 +63,17 @@ export default function Header() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <button
-              onClick={logOut}
-              className="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Déconnexion
-            </button>
+            {ssoEnabled ? (
+              <AccountMenu />
+            ) : (
+              <button
+                onClick={logOut}
+                className="cursor-pointer inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Déconnexion
+              </button>
+            )}
           </div>
         </div>
       </div>

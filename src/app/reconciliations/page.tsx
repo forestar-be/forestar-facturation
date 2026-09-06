@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth, useRequireAuth } from "@/lib/auth";
 import AccessDenied from "@/components/AccessDenied";
+import { ALLOWED_ROLES } from "@/lib/session";
 import { useRouter } from "next/navigation";
 import Header from "@/components/Header";
 import StatusIcon from "@/components/StatusIcon";
@@ -115,7 +116,8 @@ export default function ReconciliationsPage() {
     }
   };
 
-  if (denied) return <AccessDenied onLogout={logOut} />;
+  if (denied)
+    return <AccessDenied application="Facturation" allowedRoles={ALLOWED_ROLES} />;
 
   if (!ready) {
     return (

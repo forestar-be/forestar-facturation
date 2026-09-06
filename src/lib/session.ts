@@ -20,6 +20,16 @@ export const API_URL =
 export const SSO_ENABLED = process.env.NEXT_PUBLIC_AUTH_MODE === "oidc";
 
 /**
+ * Racine de l'IdP, pour les liens de gestion de compte du menu utilisateur.
+ *
+ * Valeur par défaut plutôt que variable obligatoire : l'adresse est publique et
+ * stable, et l'exiger aurait demandé de la poser sur sept projets Vercel avant
+ * que le menu ne fonctionne nulle part.
+ */
+export const SSO_ISSUER =
+  process.env.NEXT_PUBLIC_SSO_ISSUER ?? "https://auth.forestar.be";
+
+/**
  * Valeur de `useAuth().token` en mode SSO.
  *
  * Ce n'est pas un jeton : aucun secret n'atteint le JavaScript, c'est tout

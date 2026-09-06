@@ -2,6 +2,7 @@
 
 import { useAuth, useRequireAuth } from "@/lib/auth";
 import AccessDenied from "@/components/AccessDenied";
+import { ALLOWED_ROLES } from "@/lib/session";
 import Header from "@/components/Header";
 import ReconciliationDashboard from "@/components/ReconciliationDashboard";
 
@@ -11,7 +12,8 @@ export default function HomePage() {
   const { ready, denied } = useRequireAuth();
   const { logOut } = useAuth();
 
-  if (denied) return <AccessDenied onLogout={logOut} />;
+  if (denied)
+    return <AccessDenied application="Facturation" allowedRoles={ALLOWED_ROLES} />;
 
   if (!ready) {
     return (

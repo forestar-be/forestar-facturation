@@ -12,6 +12,7 @@ import {
   AuthProvider as SsoSessionProvider,
   useAuth as useSsoSession,
   type ForestarRole,
+  type SessionUser,
 } from "@forestar-be/core";
 import {
   ALLOWED_ROLES,
@@ -32,6 +33,10 @@ interface AuthContextType {
     redirectTo?: string
   ) => Promise<{ success: boolean; message: string }>;
   logOut: () => void;
+  /** Repart vers l'IdP en demandant le sélecteur de comptes. */
+  switchAccount: () => void;
+  /** Identité de la session SSO. `null` en mode historique. */
+  user: SessionUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   roles: readonly ForestarRole[];
@@ -48,6 +53,8 @@ const AuthContext = createContext<AuthContextType>({
     message: "Impossible de vous authentifier",
   }),
   logOut: () => {},
+  switchAccount: () => {},
+  user: null,
   isAuthenticated: false,
   isLoading: true,
   roles: [],
@@ -175,6 +182,9 @@ const LegacyAuthProvider = ({ children }: AuthProviderProps) => {
         expiresAt,
         loginAction,
         logOut,
+        // Aucun sélecteur de comptes hors SSO : il n'y a qu'un login local.
+        switchAccount: () => {},
+        user: null,
         isAuthenticated,
         isLoading,
         roles: [],
@@ -222,6 +232,8 @@ const SsoAuthBridge = ({ children }: AuthProviderProps) => {
         logOut: () => {
           void session.logout();
         },
+        switchAccount: () => session.switchAccount(),
+        user: session.user,
         isAuthenticated: session.isAuthenticated,
         isLoading: session.isLoading,
         roles: session.roles,
