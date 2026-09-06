@@ -18,6 +18,7 @@ import {
   API_URL as SSO_API_URL,
   getSessionClient,
   SSO_ENABLED,
+  SSO_SESSION_TOKEN,
 } from "./session";
 
 interface AuthContextType {
@@ -191,7 +192,7 @@ const LegacyAuthProvider = ({ children }: AuthProviderProps) => {
 /**
  * Traduit la session SSO dans le contrat historique consommé par les écrans.
  * Aucun composant lisant `token` n'a été réécrit : en mode SSO la valeur est
- * vide, donc `api.ts` n'émet pas d'en-tête `Authorization` et s'authentifie
+ * une sentinelle non vide, donc `api.ts` n'émet pas d'en-tête `Authorization` et s'authentifie
  * par le cookie.
  */
 const SsoAuthBridge = ({ children }: AuthProviderProps) => {
@@ -200,7 +201,9 @@ const SsoAuthBridge = ({ children }: AuthProviderProps) => {
   return (
     <AuthContext.Provider
       value={{
-        token: "",
+        // Sentinelle, pas un jeton : voir `SSO_SESSION_TOKEN`. Une chaîne vide
+        // rendait faux les tests `if (!token)` du code hérité.
+        token: SSO_SESSION_TOKEN,
         expiresAt: session.expiresAt ?? "",
         loginAction: async (_data, redirectTo) => {
           // `redirectTo` est un chemin interne. Il doit repartir absolu :

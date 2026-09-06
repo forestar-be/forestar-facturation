@@ -50,11 +50,15 @@ const apiRequest = async (
 ) => {
   const authToken = token || getAuthToken();
 
-  // En mode SSO, `authToken` est nul et l'en-tête `Authorization` disparaît :
+  // En mode SSO, `authToken` vaut une sentinelle non vide et l'en-tête
   // l'authentification passe par le cookie `__Host-`, que le navigateur envoie
   // seul, plus un jeton CSRF sur chaque mutation.
   const headers: Record<string, string> = {
-    ...(authToken && { Authorization: `Bearer ${authToken}` }),
+    // `SSO_ENABLED` et pas seulement la vérité de `authToken` : celui-ci vaut
+    // une sentinelle non vide en mode SSO depuis le 2026-09-06, pour que les
+    // tests `if (!token)` du code hérité restent justes.
+    ...(!SSO_ENABLED &&
+      authToken && { Authorization: `Bearer ${authToken}` }),
     ...(additionalHeaders as Record<string, string>),
   };
 
