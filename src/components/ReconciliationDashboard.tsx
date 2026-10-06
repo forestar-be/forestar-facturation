@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import FileUpload from "@/components/ui/FileUpload";
 import ReconciliationProgress from "@/components/ReconciliationProgress";
+import DolibarrExportHelp from "@/components/DolibarrExportHelp";
 import { validateCSVFile } from "@/lib/csvUtils";
 import { uploadFiles, getReconciliationStatus, getReconciliationResult, getStatusMessage } from "@/lib/api";
 import { ReconciliationStorage } from "@/lib/reconciliationStorage";
@@ -279,6 +280,7 @@ export default function ReconciliationDashboard() {
               <h2 className="text-lg font-semibold text-gray-900">
                 Fichier Factures
               </h2>
+              <DolibarrExportHelp className="ml-auto" />
             </div>
             <FileUpload
               label="Fichier CSV des factures"
@@ -373,6 +375,9 @@ export default function ReconciliationDashboard() {
               <div className="text-sm text-red-600 whitespace-pre-line">
                 {errors.reconciliation}
               </div>
+              {errors.reconciliation.includes("fichier factures") && (
+                <DolibarrExportHelp className="mt-2" />
+              )}
             </div>
           )}
         </div>
