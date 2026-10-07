@@ -42,7 +42,7 @@ export default function ReconciliationsPage() {
         const data = await getAllReconciliations();
         setReconciliations(data);
       } catch (err) {
-        setError("Erreur lors du chargement des réconciliations");
+        setError("Erreur lors du chargement des rapprochements");
         console.error(err);
       } finally {
         setLoading(false);
@@ -63,15 +63,15 @@ export default function ReconciliationsPage() {
       const success = await deleteReconciliation(reconciliationId);
 
       if (success) {
-        // Retirer la réconciliation de la liste
+        // Retirer le rapprochement de la liste
         setReconciliations((prev) =>
           prev.filter((r) => r.id !== reconciliationId)
         );
       } else {
-        setError("Erreur lors de la suppression de la réconciliation");
+        setError("Erreur lors de la suppression du rapprochement");
       }
     } catch (err) {
-      setError("Erreur lors de la suppression de la réconciliation");
+      setError("Erreur lors de la suppression du rapprochement");
       console.error(err);
     } finally {
       setDeletingId(null);
@@ -82,7 +82,7 @@ export default function ReconciliationsPage() {
     () => [
       {
         id: "reconciliation",
-        header: "Réconciliation",
+        header: "Rapprochement",
         enableSorting: false,
         meta: { maxWidth: false },
         cell: ({ row }) => {
@@ -219,12 +219,12 @@ export default function ReconciliationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Historique des Réconciliations"
-        description="Consultez et gérez toutes vos réconciliations bancaires"
+        title="Historique des rapprochements"
+        description="Consultez et gérez tous vos rapprochements bancaires"
         actions={
           <Button onClick={() => router.push("/")}>
             <Plus />
-            Nouvelle réconciliation
+            Nouveau rapprochement
           </Button>
         }
       />
@@ -239,12 +239,12 @@ export default function ReconciliationsPage() {
       ) : !loading && reconciliations.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title="Aucune réconciliation"
-          description="Commencez par créer votre première réconciliation bancaire."
+          title="Aucun rapprochement"
+          description="Commencez par créer votre premier rapprochement bancaire."
           action={
             <Button onClick={() => router.push("/")}>
               <Plus />
-              Nouvelle réconciliation
+              Nouveau rapprochement
             </Button>
           }
         />
@@ -260,8 +260,8 @@ export default function ReconciliationsPage() {
       <ConfirmDialog
         open={pendingDeleteId !== null}
         type="delete"
-        title="Supprimer la réconciliation"
-        message="Êtes-vous sûr de vouloir supprimer cette réconciliation ? Cette action est irréversible."
+        title="Supprimer le rapprochement"
+        message="Êtes-vous sûr de vouloir supprimer ce rapprochement ? Cette action est irréversible."
         onClose={() => setPendingDeleteId(null)}
         onConfirm={() => {
           if (pendingDeleteId) void handleDeleteReconciliation(pendingDeleteId);

@@ -15,8 +15,8 @@ interface ExportData {
   allDisplayItems: DisplayItem[];
   reconciliationId: string;
   reconciliationName: string;
-  reconciliationTitle?: string; // Titre personnalisé de la réconciliation
-  reconciliationDate?: string; // Date de création de la réconciliation
+  reconciliationTitle?: string; // Titre personnalisé du rapprochement
+  reconciliationDate?: string; // Date de création du rapprochement
   getTransactionFromMatch: (
     match: DetailedReconciliationMatch
   ) => DetailedBankTransaction | undefined;
@@ -177,7 +177,7 @@ export async function exportToExcel(
 
     // Créer une feuille d'informations sur l'export
     const exportInfo = [
-      { Propriété: "ID Réconciliation", Valeur: data.reconciliationId },
+      { Propriété: "ID Rapprochement", Valeur: data.reconciliationId },
       { Propriété: "Nom", Valeur: data.reconciliationName },
       {
         Propriété: "Date d'export",
@@ -227,7 +227,7 @@ export async function exportToExcel(
     const filterSuffix =
       data.searchTerm || data.selectedFilters?.length ? "_avec_filtres" : "";
 
-    // Utiliser le titre personnalisé s'il existe, sinon utiliser "Réconciliation" avec la date
+    // Utiliser le titre personnalisé s'il existe, sinon utiliser "Rapprochement" avec la date
     let baseFileName: string;
     if (data.reconciliationTitle && data.reconciliationTitle.trim()) {
       // Nettoyer le titre pour le nom de fichier (enlever caractères spéciaux)
@@ -237,7 +237,7 @@ export async function exportToExcel(
         .replace(/\s+/g, "_"); // Remplacer espaces par _
       baseFileName = `${cleanTitle}_${dateStr}_${timeStr}`;
     } else {
-      baseFileName = `Réconciliation_${dateStr}_${timeStr}`;
+      baseFileName = `Rapprochement_${dateStr}_${timeStr}`;
     }
 
     const fileName = `${baseFileName}${filterSuffix}.xlsx`;

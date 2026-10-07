@@ -110,9 +110,9 @@ export default function LoginPage() {
             className="rounded-full"
           />
         </div>
-        <h1 className="mb-2 text-3xl">Forestar Facturation</h1>
+        <h1 className="mb-2 text-3xl">Forestar Rapprochement</h1>
         <p className="text-muted-foreground">
-          Connectez-vous pour accéder à la réconciliation bancaire
+          Connectez-vous pour accéder au rapprochement bancaire
         </p>
 
         <Card className="mt-8 text-left">

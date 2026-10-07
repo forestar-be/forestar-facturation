@@ -1,4 +1,4 @@
-// Types pour la réconciliation bancaire
+// Types pour le rapprochement bancaire
 
 export interface Invoice {
   ref: string;
@@ -99,7 +99,7 @@ export interface ReconciliationSettings {
   enableCombinedMatching: boolean;
 }
 
-// Nouveaux types pour le système de gestion des réconciliations
+// Nouveaux types pour le système de gestion des rapprochements
 
 export interface ReconciliationSummary {
   id: string;

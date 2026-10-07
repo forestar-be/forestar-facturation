@@ -129,7 +129,10 @@ export default function DolibarrExportHelp({
                   <strong>export_facture_1.csv</strong> qui apparaît pour le
                   télécharger.
                 </li>
-                <li>Déposez ce fichier ici, dans « Fichier Factures ».</li>
+                <li>
+                  Déposez ce fichier ici, dans l&apos;onglet « Fichier CSV » de
+                  la carte « Factures ».
+                </li>
               </ol>
             </section>
 

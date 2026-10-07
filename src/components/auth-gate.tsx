@@ -17,7 +17,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
 
   if (denied) {
     return (
-      <AccessDenied application="Facturation" allowedRoles={ALLOWED_ROLES} />
+      <AccessDenied application="Rapprochement" allowedRoles={ALLOWED_ROLES} />
     );
   }
 

@@ -59,7 +59,7 @@ export default function ReconciliationProgress({
         <div className="flex items-center gap-2">
           {getStatusIcon()}
           <h3 className="text-lg font-semibold">
-            Progression de la réconciliation
+            Progression du rapprochement
           </h3>
         </div>
 
@@ -72,7 +72,7 @@ export default function ReconciliationProgress({
           <Progress
             value={progress}
             tone={getStatusTone()}
-            aria-label="Progression de la réconciliation"
+            aria-label="Progression du rapprochement"
           />
 
           <p className="text-sm text-muted-foreground">{message}</p>

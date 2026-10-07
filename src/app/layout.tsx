@@ -5,9 +5,9 @@ import { AuthProvider } from "@/lib/auth";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Forestar Facturation - Réconciliation Bancaire",
+  title: "Rapprochement bancaire - Forestar",
   description:
-    "Application de réconciliation bancaire automatique pour Forestar",
+    "Application de rapprochement bancaire automatique pour Forestar",
 };
 
 export default function RootLayout({

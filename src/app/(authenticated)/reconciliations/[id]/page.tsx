@@ -121,14 +121,14 @@ export default function ReconciliationDetailPage() {
     );
   }
 
-  // Erreur ou réconciliation non trouvée
+  // Erreur ou rapprochement non trouvé
   if (error || !reconciliation) {
     return (
       <div
         role="alert"
         className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive"
       >
-        {error || "Réconciliation non trouvée"}
+        {error || "Rapprochement non trouvé"}
       </div>
     );
   }
