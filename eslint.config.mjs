@@ -1,38 +1,19 @@
-import { FlatCompat } from "@eslint/eslintrc";
-import js from "@eslint/js";
-import nextConfig from "eslint-config-next";
-import prettierConfig from "eslint-config-prettier";
-import prettierPlugin from "eslint-plugin-prettier";
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
 
-const compat = new FlatCompat({
-  baseDirectory: import.meta.dirname,
-  recommendedConfig: js.configs.recommended,
-});
-
-/** @type {import('eslint').Linter.Config[]} */
-const config = [
-  ...compat.extends("next"),
-  prettierConfig,
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
   {
-    plugins: {
-      prettier: prettierPlugin,
-    },
     rules: {
-      "prettier/prettier": "warn",
-      "@next/next/no-img-element": "off",
-      "react/no-unescaped-entities": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
-        {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-        },
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
     },
   },
-  {
-    ignores: [".next/**", "node_modules/**", "out/**", "*.config.*"],
-  },
-];
+  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+]);
 
-export default config;
+export default eslintConfig;
