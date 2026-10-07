@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useRef,
-} from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   AuthProvider as SsoSessionProvider,
@@ -95,10 +89,13 @@ const LegacyAuthProvider = ({ children }: AuthProviderProps) => {
     const savedToken = getTokenFromLocalStorage();
     const savedExpiresAt = localStorage.getItem("facturation_expires_at") || "";
 
+    // Lecture du stockage après l'hydratation : il n'existe pas côté serveur.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setToken(savedToken);
     setExpiresAt(savedExpiresAt);
     setIsAuthenticated(!!savedToken);
     setIsLoading(false);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   const loginAction = async (

@@ -1,5 +1,12 @@
-import React, { useState, useRef, useEffect } from "react";
-import { Search, Filter, Plus, ChevronDown, Download } from "lucide-react";
+import React from "react";
+import { Search, Plus, Download } from "lucide-react";
+import {
+  Button,
+  Input,
+  MultiCombobox,
+  noAutofillProps,
+  type ComboboxOption,
+} from "@forestar-be/ui";
 import SortSelectorWithDirection, { SortConfig } from "./SortSelector";
 
 interface ReconciliationFiltersProps {
@@ -16,6 +23,32 @@ interface ReconciliationFiltersProps {
   onExportExcel: () => void;
 }
 
+// Fonction pour obtenir le label d'un type de filtre
+const getFilterLabel = (filterType: string, count: number) => {
+  switch (filterType) {
+    case "EXACT_REF":
+      return `Référence exacte (${count})`;
+    case "EXACT_AMOUNT":
+      return `Montant exact (${count})`;
+    case "REFINED_AMOUNT":
+      return `Montant raffiné (${count})`;
+    case "SIMPLE_NAME":
+      return `Nom exact (${count})`;
+    case "FUZZY_NAME":
+      return `Nom approchant (${count})`;
+    case "COMBINED":
+      return `Combiné (${count})`;
+    case "MANUAL":
+      return `Manuelles (${count})`;
+    case "MULTIPLE":
+      return `Multiples ⚠️ (${count})`;
+    case "NONE":
+      return `Non appariées (${count})`;
+    default:
+      return `${filterType} (${count})`;
+  }
+};
+
 export default function ReconciliationFilters({
   searchTerm,
   selectedFilters,
@@ -29,166 +62,38 @@ export default function ReconciliationFilters({
   onCreateMatch,
   onExportExcel,
 }: ReconciliationFiltersProps) {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const filterOptions: ComboboxOption[] = availableFilterTypes.map((type) => ({
+    value: type,
+    label: getFilterLabel(type, filterTypeCounts[type] || 0),
+  }));
 
-  // Fermer le dropdown si on clique ailleurs
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  // Gérer les changements de filtres
-  const handleFilterToggle = (filterType: string) => {
-    if (selectedFilters.includes(filterType)) {
-      // Décocher un filtre
-      const newFilters = selectedFilters.filter((f) => f !== filterType);
-      onFiltersChange(newFilters);
-    } else {
-      // Cocher un filtre
-      const newFilters = [...selectedFilters, filterType];
-      onFiltersChange(newFilters);
-    }
-  };
-
-  // Gérer la sélection/déselection de tous les filtres
-  const handleAllTypesToggle = () => {
-    if (selectedFilters.length === availableFilterTypes.length) {
-      // Si tous les filtres sont sélectionnés, revenir à l'état par défaut (aucun filtre)
-      onFiltersChange([]);
-    } else {
-      // Sinon, sélectionner tous les filtres
-      onFiltersChange([...availableFilterTypes]);
-    }
-  };
-
-  // Vérifier l'état des filtres
-  const allTypesMode = selectedFilters.length === 0; // Mode par défaut "tous les types"
-  const allIndividualTypesSelected =
-    selectedFilters.length === availableFilterTypes.length;
-  const allTypesEffectivelySelected =
-    allTypesMode || allIndividualTypesSelected;
-
-  // Fonction pour obtenir le label d'un type de filtre
-  const getFilterLabel = (filterType: string) => {
-    const count = filterTypeCounts[filterType] || 0;
-    switch (filterType) {
-      case "EXACT_REF":
-        return `Référence exacte (${count})`;
-      case "EXACT_AMOUNT":
-        return `Montant exact (${count})`;
-      case "REFINED_AMOUNT":
-        return `Montant raffiné (${count})`;
-      case "SIMPLE_NAME":
-        return `Nom exact (${count})`;
-      case "FUZZY_NAME":
-        return `Nom approchant (${count})`;
-      case "COMBINED":
-        return `Combiné (${count})`;
-      case "MANUAL":
-        return `Manuelles (${count})`;
-      case "MULTIPLE":
-        return `Multiples ⚠️ (${count})`;
-      case "NONE":
-        return `Non appariées (${count})`;
-      default:
-        return `${filterType} (${count})`;
-    }
-  };
-
-  // Créer le texte du bouton de filtre
-  const getFilterButtonText = () => {
-    if (allTypesMode) {
-      return `Tous les types (${totalItemsCount})`;
-    } else if (allIndividualTypesSelected) {
-      return `Tous les types (${totalItemsCount})`;
-    } else if (selectedFilters.length === 1) {
-      return getFilterLabel(selectedFilters[0]);
-    } else {
-      const totalSelected = selectedFilters.reduce(
-        (sum, filter) => sum + (filterTypeCounts[filter] || 0),
-        0
-      );
-      return `${selectedFilters.length} types sélectionnés (${totalSelected})`;
-    }
-  };
-
-  // Obtenir les badges des filtres sélectionnés pour l'affichage
-  const getSelectedFiltersBadges = () => {
-    if (selectedFilters.length <= 3) {
-      return selectedFilters;
-    }
-    return selectedFilters.slice(0, 2);
-  };
-
-  const getFilterBadgeLabel = (filterType: string) => {
-    switch (filterType) {
-      case "EXACT_REF":
-        return "Réf. exacte";
-      case "EXACT_AMOUNT":
-        return "Montant exact";
-      case "REFINED_AMOUNT":
-        return "Montant raffiné";
-      case "SIMPLE_NAME":
-        return "Nom exact";
-      case "FUZZY_NAME":
-        return "Nom approchant";
-      case "COMBINED":
-        return "Combiné";
-      case "MANUAL":
-        return "Manuelles";
-      case "MULTIPLE":
-        return "Multiples";
-      case "NONE":
-        return "Non appariées";
-      default:
-        return filterType;
-    }
-  };
   return (
-    <div className="flex flex-col space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg leading-6 font-medium text-gray-900">
-          Filtres des correspondances
-        </h3>
-        <div className="flex space-x-2">
-          <button
-            onClick={onExportExcel}
-            className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            <Download className="h-4 w-4 mr-2" />
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-lg font-medium">Filtres des correspondances</h3>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={onExportExcel}>
+            <Download />
             Export Excel
-          </button>
-          <button
-            onClick={onCreateMatch}
-            className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-          >
-            <Plus className="h-4 w-4 mr-2" />
+          </Button>
+          <Button onClick={onCreateMatch}>
+            <Plus />
             Nouvelle correspondance
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4">
-        <div className="relative flex-1">
-          <Search className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="search"
+            {...noAutofillProps}
             placeholder="Rechercher par référence, client, libellé..."
+            aria-label="Rechercher par référence, client, libellé"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            className="pl-9"
           />
         </div>
 
@@ -197,129 +102,16 @@ export default function ReconciliationFilters({
           onSortChange={onSortChange}
         />
 
-        <div className="relative flex-shrink-0" ref={dropdownRef}>
-          <Filter className="h-5 w-5 absolute left-3 top-3 text-gray-400 z-10" />
-          <button
-            type="button"
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="cursor-pointer pl-10 pr-8 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white text-left flex items-center justify-between w-80"
-          >
-            <div className="flex items-center flex-1 min-w-0">
-              {allTypesMode || allIndividualTypesSelected ? (
-                <span className="truncate">{getFilterButtonText()}</span>
-              ) : selectedFilters.length === 1 ? (
-                <span className="truncate">{getFilterButtonText()}</span>
-              ) : (
-                <div className="flex items-center gap-1 flex-1 min-w-0">
-                  {getSelectedFiltersBadges().map((filter) => (
-                    <span
-                      key={filter}
-                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                    >
-                      {getFilterBadgeLabel(filter)}
-                    </span>
-                  ))}
-                  {selectedFilters.length > 3 && (
-                    <span className="text-xs text-gray-500">
-                      +{selectedFilters.length - 2} autres
-                    </span>
-                  )}
-                  <span className="text-xs text-gray-500 ml-auto">
-                    (
-                    {selectedFilters.reduce(
-                      (sum, filter) => sum + (filterTypeCounts[filter] || 0),
-                      0
-                    )}
-                    )
-                  </span>
-                </div>
-              )}
-            </div>
-            <ChevronDown
-              className={`h-4 w-4 transition-transform flex-shrink-0 ml-2 ${
-                isDropdownOpen ? "rotate-180" : ""
-              }`}
-            />
-          </button>
-
-          {isDropdownOpen && (
-            <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-              <div className="p-2">
-                <div className="space-y-1">
-                  {/* Option "Tous les types" */}
-                  <label
-                    className={`flex items-center p-2 rounded ${
-                      allTypesEffectivelySelected
-                        ? "cursor-not-allowed"
-                        : "cursor-pointer hover:bg-gray-50"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={allTypesEffectivelySelected}
-                      onChange={handleAllTypesToggle}
-                      disabled={allTypesEffectivelySelected} // Désactivé quand coché
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                    />
-                    <span
-                      className={`ml-2 text-sm font-medium ${
-                        allTypesEffectivelySelected
-                          ? "text-gray-500"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      Tous les types ({totalItemsCount})
-                    </span>
-                  </label>
-
-                  {/* Séparateur */}
-                  <div className="border-t border-gray-200 my-1"></div>
-
-                  {/* Options individuelles */}
-                  {availableFilterTypes.map((filterType) => (
-                    <label
-                      key={filterType}
-                      className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedFilters.includes(filterType)}
-                        onChange={() => handleFilterToggle(filterType)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <span className="ml-2 text-sm">
-                        {getFilterLabel(filterType)}
-                      </span>
-                    </label>
-                  ))}
-
-                  {/* Actions en bas */}
-                  {selectedFilters.length > 0 && (
-                    <>
-                      <div className="border-t border-gray-200 my-1"></div>
-                      <div className="flex justify-between p-2">
-                        <button
-                          type="button"
-                          onClick={() => onFiltersChange([])}
-                          className="text-xs text-gray-500 hover:text-gray-700"
-                        >
-                          Tout effacer
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIsDropdownOpen(false)}
-                          className="text-xs text-blue-600 hover:text-blue-800"
-                        >
-                          Fermer
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Aucun type coché = « tous les types » : le filtre ne restreint rien. */}
+        <MultiCombobox
+          options={filterOptions}
+          value={selectedFilters}
+          onChange={onFiltersChange}
+          placeholder={`Tous les types (${totalItemsCount})`}
+          searchPlaceholder="Filtrer par type..."
+          aria-label="Filtrer par type de correspondance"
+          className="lg:w-80"
+        />
       </div>
     </div>
   );

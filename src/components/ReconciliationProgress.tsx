@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckCircle, Clock, AlertCircle, Loader2 } from "lucide-react";
+import { CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { Card, CardContent, Progress, Spinner } from "@forestar-be/ui";
 
 interface ReconciliationProgressProps {
   status: string;
@@ -16,26 +17,26 @@ export default function ReconciliationProgress({
   const getStatusIcon = () => {
     switch (status) {
       case "completed":
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
+        return <CheckCircle className="size-5 text-success" />;
       case "failed":
-        return <AlertCircle className="h-5 w-5 text-red-600" />;
+        return <AlertCircle className="size-5 text-destructive" />;
       case "processing":
-        return <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />;
+        return <Spinner size="sm" className="size-5 text-info" />;
       default:
-        return <Clock className="h-5 w-5 text-gray-600" />;
+        return <Clock className="size-5 text-muted-foreground" />;
     }
   };
 
-  const getStatusColor = () => {
+  const getStatusTone = () => {
     switch (status) {
       case "completed":
-        return "bg-green-600";
+        return "success" as const;
       case "failed":
-        return "bg-red-600";
+        return "danger" as const;
       case "processing":
-        return "bg-blue-600";
+        return "info" as const;
       default:
-        return "bg-gray-600";
+        return "neutral" as const;
     }
   };
 
@@ -53,31 +54,30 @@ export default function ReconciliationProgress({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center mb-4">
-        {getStatusIcon()}
-        <h3 className="text-lg font-semibold text-gray-900 ml-2">
-          Progression de la réconciliation
-        </h3>
-      </div>
-
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-700">
-            {getStatusText()}
-          </span>
-          <span className="text-sm text-gray-500">{progress}%</span>
+    <Card>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-2">
+          {getStatusIcon()}
+          <h3 className="text-lg font-semibold">
+            Progression de la réconciliation
+          </h3>
         </div>
 
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className={`h-2 rounded-full transition-all duration-300 ${getStatusColor()}`}
-            style={{ width: `${progress}%` }}
-          ></div>
-        </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">{getStatusText()}</span>
+            <span className="text-sm text-muted-foreground">{progress}%</span>
+          </div>
 
-        <p className="text-sm text-gray-600">{message}</p>
-      </div>
-    </div>
+          <Progress
+            value={progress}
+            tone={getStatusTone()}
+            aria-label="Progression de la réconciliation"
+          />
+
+          <p className="text-sm text-muted-foreground">{message}</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

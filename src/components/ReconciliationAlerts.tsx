@@ -27,27 +27,23 @@ export default function ReconciliationAlerts({
   return (
     <div className="space-y-2">
       {hasUnmatchedItems && (
-        <div className="p-3 bg-yellow-50 rounded-md">
-          <div className="flex items-center text-sm text-yellow-800">
-            <AlertCircle className="h-4 w-4 mr-2" />
-            <span>
-              {unmatchedInvoicesCount} facture(s) et{" "}
-              {unmatchedTransactionsCount} transaction(s) non appariées
-              disponibles pour correspondances manuelles
-            </span>
-          </div>
+        <div className="flex items-center gap-2 rounded-lg border border-warning/35 bg-warning/15 p-3 text-sm">
+          <AlertCircle className="size-4 shrink-0 text-warning" />
+          <span>
+            {unmatchedInvoicesCount} facture(s) et {unmatchedTransactionsCount}{" "}
+            transaction(s) non appariées disponibles pour correspondances
+            manuelles
+          </span>
         </div>
       )}
 
       {hasMultipleMatches && (
-        <div className="p-3 bg-orange-50 rounded-md">
-          <div className="flex items-center text-sm text-orange-800">
-            <AlertCircle className="h-4 w-4 mr-2" />
-            <span>
-              <strong>{invoicesWithMultipleMatches.length} facture(s)</strong>{" "}
-              ont des correspondances multiples qui nécessitent un choix manuel
-            </span>
-          </div>
+        <div className="flex items-center gap-2 rounded-lg border border-warning/35 bg-warning/15 p-3 text-sm">
+          <AlertCircle className="size-4 shrink-0 text-warning" />
+          <span>
+            <strong>{invoicesWithMultipleMatches.length} facture(s)</strong> ont
+            des correspondances multiples qui nécessitent un choix manuel
+          </span>
         </div>
       )}
     </div>

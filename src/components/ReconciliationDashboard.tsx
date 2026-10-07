@@ -2,13 +2,25 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import FileUpload from "@/components/ui/FileUpload";
 import ReconciliationProgress from "@/components/ReconciliationProgress";
 import DolibarrExportHelp from "@/components/DolibarrExportHelp";
 import { validateCSVFile } from "@/lib/csvUtils";
-import { uploadFiles, getReconciliationStatus, getReconciliationResult, getStatusMessage } from "@/lib/api";
+import {
+  uploadFiles,
+  getReconciliationStatus,
+  getReconciliationResult,
+  getStatusMessage,
+} from "@/lib/api";
 import { ReconciliationStorage } from "@/lib/reconciliationStorage";
 import { FileText, Play, RefreshCw } from "lucide-react";
+import {
+  Button,
+  Card,
+  CardContent,
+  FileDropzone,
+  PageHeader,
+  Spinner,
+} from "@forestar-be/ui";
 
 export default function ReconciliationDashboard() {
   const router = useRouter();
@@ -79,6 +91,8 @@ export default function ReconciliationDashboard() {
         pollingTimeoutRef.current = null;
       }
     };
+    // Reprise au montage seulement : le polling se relance de lui-même ensuite.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fonction de polling simple
@@ -104,7 +118,11 @@ export default function ReconciliationDashboard() {
 
       // Mettre à jour le localStorage
       ReconciliationStorage.updateStatus(
-        status.status.toUpperCase() as any,
+        status.status.toUpperCase() as
+          | "PENDING"
+          | "PROCESSING"
+          | "COMPLETED"
+          | "ERROR",
         status.progress || 0,
         getStatusMessage(status)
       );
@@ -113,10 +131,12 @@ export default function ReconciliationDashboard() {
       if (status.status === "COMPLETED") {
         const result = await getReconciliationResult(reconciliationId);
         stopPolling();
-        
+
         // Rediriger vers la page de détails
         if (result?.reconciliationId || reconciliationId) {
-          router.push(`/reconciliations/${result?.reconciliationId || reconciliationId}`);
+          router.push(
+            `/reconciliations/${result?.reconciliationId || reconciliationId}`
+          );
         } else {
           router.push("/reconciliations");
         }
@@ -253,6 +273,13 @@ export default function ReconciliationDashboard() {
     }
   };
 
+  // La croix de la zone de dépôt retire le fichier retenu : il n'est plus
+  // envoyé au lancement, et l'état de la zone revient à l'invite.
+  const handleFileClear = (kind: "invoices" | "transactions") => {
+    setSelectedFiles((prev) => ({ ...prev, [kind]: null }));
+    setFileNames((prev) => ({ ...prev, [kind]: "" }));
+  };
+
   const canReconcile =
     selectedFiles.invoices &&
     selectedFiles.transactions &&
@@ -261,65 +288,62 @@ export default function ReconciliationDashboard() {
   return (
     <div className="space-y-8">
       {/* En-tête */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Réconciliation Bancaire
-        </h1>
-        <p className="mt-2 text-gray-600">
-          Importez vos fichiers de factures et d'extraits bancaires pour lancer
-          la réconciliation automatique
-        </p>
-      </div>
+      <PageHeader
+        title="Réconciliation Bancaire"
+        description="Importez vos fichiers de factures et d'extraits bancaires pour lancer la réconciliation automatique"
+      />
 
       {/* Section d'import des fichiers */}
       {!hasActiveReconciliation && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center mb-4">
-              <FileText className="h-5 w-5 text-blue-600 mr-2" />
-              <h2 className="text-lg font-semibold text-gray-900">
-                Fichier Factures
-              </h2>
-              <DolibarrExportHelp className="ml-auto" />
-            </div>
-            <FileUpload
-              label="Fichier CSV des factures"
-              accept=".csv"
-              onFileSelect={handleInvoiceFileSelect}
-              loading={loadingStates.invoices}
-              error={errors.invoices}
-              success={!!selectedFiles.invoices}
-              fileName={fileNames.invoices}
-            />
-            {selectedFiles.invoices && (
-              <div className="mt-3 text-sm text-green-600">
-                ✓ Fichier sélectionné: {fileNames.invoices}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Card>
+            <CardContent className="space-y-4">
+              <div className="flex min-h-9 flex-wrap items-center gap-2">
+                <FileText className="size-5 text-info" />
+                <h2 className="text-lg font-semibold">Fichier Factures</h2>
+                <DolibarrExportHelp className="ml-auto" />
               </div>
-            )}
-          </div>
+              <FileDropzone
+                label="Fichier CSV des factures"
+                accept=".csv"
+                hint="Formats acceptés: CSV (max 10MB)"
+                onFileSelect={handleInvoiceFileSelect}
+                onClear={() => handleFileClear("invoices")}
+                loading={loadingStates.invoices}
+                error={errors.invoices}
+                fileName={fileNames.invoices}
+              />
+              {selectedFiles.invoices && (
+                <div className="text-sm text-success">
+                  ✓ Fichier sélectionné: {fileNames.invoices}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center mb-4">
-              <FileText className="h-5 w-5 text-green-600 mr-2" />
-              <h2 className="text-lg font-semibold text-gray-900">
-                Fichier Banque
-              </h2>
-            </div>
-            <FileUpload
-              label="Fichier CSV des transactions bancaires"
-              accept=".csv"
-              onFileSelect={handleTransactionFileSelect}
-              loading={loadingStates.transactions}
-              error={errors.transactions}
-              success={!!selectedFiles.transactions}
-              fileName={fileNames.transactions}
-            />
-            {selectedFiles.transactions && (
-              <div className="mt-3 text-sm text-green-600">
-                ✓ Fichier sélectionné: {fileNames.transactions}
+          <Card>
+            <CardContent className="space-y-4">
+              <div className="flex min-h-9 items-center gap-2">
+                <FileText className="size-5 text-success" />
+                <h2 className="text-lg font-semibold">Fichier Banque</h2>
               </div>
-            )}
-          </div>
+              <FileDropzone
+                label="Fichier CSV des transactions bancaires"
+                accept=".csv"
+                hint="Formats acceptés: CSV (max 10MB)"
+                onFileSelect={handleTransactionFileSelect}
+                onClear={() => handleFileClear("transactions")}
+                loading={loadingStates.transactions}
+                error={errors.transactions}
+                fileName={fileNames.transactions}
+              />
+              {selectedFiles.transactions && (
+                <div className="text-sm text-success">
+                  ✓ Fichier sélectionné: {fileNames.transactions}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -327,60 +351,52 @@ export default function ReconciliationDashboard() {
       {(selectedFiles.invoices ||
         selectedFiles.transactions ||
         hasActiveReconciliation) && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                {hasActiveReconciliation
-                  ? "Réconciliation en cours"
-                  : "Lancer la Réconciliation"}
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {hasActiveReconciliation
-                  ? "Une réconciliation est actuellement en cours de traitement"
-                  : canReconcile
-                    ? "Tous les fichiers sont prêts, vous pouvez lancer la réconciliation"
-                    : "Sélectionnez les deux fichiers pour continuer"}
-              </p>
-            </div>
-            {!hasActiveReconciliation && (
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={handleReconciliation}
-                  disabled={!canReconcile}
-                  className={`
-                    cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md
-                    ${
-                      canReconcile
-                        ? "text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        : "text-gray-400 bg-gray-200 cursor-not-allowed"
-                    }
-                  `}
-                >
+        <Card>
+          <CardContent>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  {hasActiveReconciliation
+                    ? "Réconciliation en cours"
+                    : "Lancer la Réconciliation"}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {hasActiveReconciliation
+                    ? "Une réconciliation est actuellement en cours de traitement"
+                    : canReconcile
+                      ? "Tous les fichiers sont prêts, vous pouvez lancer la réconciliation"
+                      : "Sélectionnez les deux fichiers pour continuer"}
+                </p>
+              </div>
+              {!hasActiveReconciliation && (
+                <Button onClick={handleReconciliation} disabled={!canReconcile}>
                   {loadingStates.reconciliation ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <Spinner size="sm" className="text-current" />
                   ) : (
-                    <Play className="h-4 w-4 mr-2" />
+                    <Play />
                   )}
                   {loadingStates.reconciliation
                     ? "Réconciliation..."
                     : "Lancer la réconciliation"}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {errors.reconciliation && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <div className="text-sm text-red-600 whitespace-pre-line">
-                {errors.reconciliation}
-              </div>
-              {errors.reconciliation.includes("fichier factures") && (
-                <DolibarrExportHelp className="mt-2" />
+                </Button>
               )}
             </div>
-          )}
-        </div>
+
+            {errors.reconciliation && (
+              <div
+                role="alert"
+                className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3"
+              >
+                <div className="text-sm whitespace-pre-line text-destructive">
+                  {errors.reconciliation}
+                </div>
+                {errors.reconciliation.includes("fichier factures") && (
+                  <DolibarrExportHelp className="mt-2" />
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Indicateur de progrès */}
@@ -394,25 +410,24 @@ export default function ReconciliationDashboard() {
 
       {/* Section nouvelle réconciliation */}
       {!hasActiveReconciliation && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Historique des Réconciliations
-              </h2>
-              <p className="text-sm text-gray-600 mt-1">
-                Consultez vos réconciliations précédentes
-              </p>
+        <Card>
+          <CardContent>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  Historique des Réconciliations
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Consultez vos réconciliations précédentes
+                </p>
+              </div>
+              <Button onClick={() => router.push("/reconciliations")}>
+                <RefreshCw />
+                Voir l'historique
+              </Button>
             </div>
-            <button
-              onClick={() => router.push("/reconciliations")}
-              className="cursor-pointer inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Voir l'historique
-            </button>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

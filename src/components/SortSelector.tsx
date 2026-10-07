@@ -1,11 +1,13 @@
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 import {
-  ArrowUpDown,
-  ChevronDown,
-  Check,
-  ArrowUp,
-  ArrowDown,
-} from "lucide-react";
+  Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@forestar-be/ui";
 
 export type SortOption = {
   field: string | null;
@@ -27,11 +29,7 @@ interface SortSelectorProps {
   onSortChange: (config: SortConfig) => void;
 }
 
-interface SortDirectionToggleProps {
-  direction: "asc" | "desc";
-  onToggle: () => void;
-  disabled?: boolean;
-}
+const DEFAULT_VALUE = "default";
 
 const SORT_OPTIONS: SortOption[] = [
   {
@@ -66,73 +64,17 @@ const SORT_OPTIONS: SortOption[] = [
   },
 ];
 
-// Composant pour le bouton de basculement de direction
-function SortDirectionToggle({
-  direction,
-  onToggle,
-  disabled = false,
-}: SortDirectionToggleProps) {
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      disabled={disabled}
-      className={`px-3 py-[10.8px] border border-l-0 border-gray-300 rounded-r-md focus:ring-blue-500 focus:border-blue-500 ${
-        disabled
-          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-          : "bg-white text-gray-700 hover:bg-gray-50 cursor-pointer"
-      }`}
-      title={
-        disabled
-          ? "Sélectionnez d'abord un type de tri"
-          : `Tri ${direction === "asc" ? "croissant" : "décroissant"}`
-      }
-    >
-      {direction === "asc" ? (
-        <ArrowUp className="h-5 w-5" />
-      ) : (
-        <ArrowDown className="h-5 w-5" />
-      )}
-    </button>
-  );
-}
+const optionOf = (value: string | null) =>
+  SORT_OPTIONS.find((option) => (option.field ?? DEFAULT_VALUE) === value);
 
-function SortSelector({ sortConfig, onSortChange }: SortSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Fermer le dropdown si on clique ailleurs
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  // Obtenir le label du tri actuel
-  const getCurrentSortLabel = () => {
-    if (!sortConfig.field) {
-      return "Tri par défaut";
-    }
-
-    const option = SORT_OPTIONS.find((opt) => opt.field === sortConfig.field);
-    if (!option) return "Tri personnalisé";
-
-    return option.label;
-  };
-
+// Sélecteur du champ de tri, suivi du bouton de direction
+export function SortSelectorWithDirection({
+  sortConfig,
+  onSortChange,
+}: SortSelectorProps) {
   // Gérer la sélection d'une option
-  const handleOptionSelect = (option: SortOption) => {
-    if (option.field === null) {
+  const handleOptionSelect = (value: string | null) => {
+    if (value === null || value === DEFAULT_VALUE) {
       // Tri par défaut : validé puis confiance (décroissant)
       onSortChange({
         field: null,
@@ -140,132 +82,59 @@ function SortSelector({ sortConfig, onSortChange }: SortSelectorProps) {
       });
     } else {
       // Nouveau champ, garder la direction actuelle ou utiliser la direction par défaut
-      const initialDirection = option.field === "confidence" ? "desc" : "asc";
+      const initialDirection = value === "confidence" ? "desc" : "asc";
       onSortChange({
-        field: option.field,
+        field: value,
         direction:
-          sortConfig.field === option.field
-            ? sortConfig.direction
-            : initialDirection,
-      });
-    }
-    setIsOpen(false);
-  };
-
-  // Basculer la direction de tri
-  const handleDirectionToggle = () => {
-    if (sortConfig.field !== null) {
-      onSortChange({
-        field: sortConfig.field,
-        direction: sortConfig.direction === "asc" ? "desc" : "asc",
+          sortConfig.field === value ? sortConfig.direction : initialDirection,
       });
     }
   };
 
-  // Vérifier si une option est sélectionnée
-  const isOptionSelected = (option: SortOption) => {
-    if (option.field === null && sortConfig.field === null) {
-      return true;
-    }
-    return sortConfig.field === option.field;
-  };
+  const currentValue = sortConfig.field ?? DEFAULT_VALUE;
 
   return (
-    <div className="relative flex-shrink-0" ref={dropdownRef}>
-      <ArrowUpDown className="h-5 w-5 absolute left-3 top-3 text-gray-400 z-10" />
-      <button
+    <div className="flex items-center gap-1">
+      <Select value={currentValue} onValueChange={handleOptionSelect}>
+        <SelectTrigger aria-label="Trier par" className="w-56">
+          <ArrowUpDown className="text-muted-foreground" />
+          <SelectValue>
+            {(value: string) => optionOf(value)?.label ?? "Tri personnalisé"}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent align="start">
+          {SORT_OPTIONS.map((option) => (
+            <SelectItem
+              key={option.field ?? DEFAULT_VALUE}
+              value={option.field ?? DEFAULT_VALUE}
+            >
+              <span className="flex flex-col items-start">
+                <span className="font-medium">{option.label}</span>
+                {option.description && (
+                  <span className="text-xs text-muted-foreground">
+                    {option.description}
+                  </span>
+                )}
+              </span>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="cursor-pointer pl-10 pr-8 py-[10.8px] border border-gray-300 rounded-l-md focus:ring-blue-500 focus:border-blue-500 bg-white text-left flex items-center justify-between w-64"
-      >
-        <span className="truncate text-sm font-medium">
-          {getCurrentSortLabel()}
-        </span>
-        <ChevronDown
-          className={`h-4 w-4 transition-transform flex-shrink-0 ml-2 ${
-            isOpen ? "rotate-180" : ""
-          }`}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-80 overflow-auto">
-          <div className="p-2">
-            <div className="space-y-1">
-              {SORT_OPTIONS.map((option) => (
-                <button
-                  key={option.field || "default"}
-                  onClick={() => handleOptionSelect(option)}
-                  className="flex items-start p-3 hover:bg-gray-50 rounded cursor-pointer w-full text-left"
-                >
-                  <div className="flex-shrink-0 mt-0.5">
-                    {isOptionSelected(option) ? (
-                      <Check className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <div className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div className="ml-3 flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900">
-                        {option.label}
-                      </span>
-                      {isOptionSelected(option) && (
-                        <Check className="h-4 w-4 text-blue-600 ml-2" />
-                      )}
-                    </div>
-                    {option.description && (
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {option.description}
-                      </p>
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Actions en bas */}
-            <div className="border-t border-gray-200 mt-2 pt-2">
-              <div className="flex justify-between items-center p-2">
-                <div className="text-xs text-gray-500">
-                  {sortConfig.field
-                    ? `Tri: ${getCurrentSortLabel()}`
-                    : "Tri par défaut actif"}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsOpen(false)}
-                  className="text-xs text-blue-600 hover:text-blue-800"
-                >
-                  Fermer
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Composant principal qui combine le sélecteur et le bouton de direction
-export function SortSelectorWithDirection({
-  sortConfig,
-  onSortChange,
-}: SortSelectorProps) {
-  return (
-    <div className="flex items-center">
-      <SortSelector sortConfig={sortConfig} onSortChange={onSortChange} />
-      <SortDirectionToggle
-        direction={sortConfig.direction}
-        onToggle={() => {
+        variant="outline"
+        size="icon"
+        onClick={() =>
           onSortChange({
             field: sortConfig.field,
             direction: sortConfig.direction === "asc" ? "desc" : "asc",
-          });
-        }}
-        disabled={false}
-      />
+          })
+        }
+        title={`Tri ${sortConfig.direction === "asc" ? "croissant" : "décroissant"}`}
+        aria-label={`Tri ${sortConfig.direction === "asc" ? "croissant" : "décroissant"}`}
+      >
+        {sortConfig.direction === "asc" ? <ArrowUp /> : <ArrowDown />}
+      </Button>
     </div>
   );
 }

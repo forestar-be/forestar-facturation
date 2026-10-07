@@ -1,4 +1,3 @@
-import React from "react";
 import { CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
 
 interface StatusIconProps {
@@ -8,18 +7,18 @@ interface StatusIconProps {
 
 export default function StatusIcon({
   status,
-  className = "h-5 w-5",
+  className = "size-5",
 }: StatusIconProps) {
   switch (status) {
     case "COMPLETED":
-      return <CheckCircle className={`${className} text-green-600`} />;
+      return <CheckCircle className={`${className} text-success`} />;
     case "ERROR":
-      return <XCircle className={`${className} text-red-600`} />;
+      return <XCircle className={`${className} text-destructive`} />;
     case "PROCESSING":
-      return <Clock className={`${className} text-blue-600 animate-spin`} />;
+      return <Clock className={`${className} animate-spin text-info`} />;
     case "PENDING":
-      return <AlertCircle className={`${className} text-yellow-600`} />;
+      return <AlertCircle className={`${className} text-warning`} />;
     default:
-      return <AlertCircle className={`${className} text-gray-600`} />;
+      return <AlertCircle className={`${className} text-muted-foreground`} />;
   }
 }

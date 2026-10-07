@@ -1,8 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { Euro, Eye, FileText } from "lucide-react";
+import {
+  Button,
+  DataList,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@forestar-be/ui";
+import { formatAmount } from "@/lib/format";
 import { DetailedBankTransaction } from "@/types";
-import { X, Eye, Calendar, Euro, FileText, Info } from "lucide-react";
 
 interface TransactionDetailsModalProps {
   transaction: DetailedBankTransaction;
@@ -15,105 +25,69 @@ export default function TransactionDetailsModal({
   isOpen,
   onClose,
 }: TransactionDetailsModalProps) {
-  if (!isOpen) return null;
-
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat("fr-FR", {
-      style: "currency",
-      currency: "EUR",
-    }).format(amount);
-  };
-
   return (
-    <div
-      className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50"
-      style={{
-        backgroundColor: "rgba(0, 0, 0, 0.3)",
-        backdropFilter: "blur(4px)",
-        WebkitBackdropFilter: "blur(4px)",
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <FileText className="h-5 w-5 mr-2 text-blue-600" />
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-[min(92vw,42rem)]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <FileText className="size-5 text-primary" />
             Détails de la transaction
-          </h2>
-          <button
-            onClick={onClose}
-            className="cursor-pointer text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="h-6 w-6" />
-          </button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
-        <div className="p-6 space-y-6">
+        <div className="min-w-0 space-y-5">
           {/* Informations principales */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-blue-900 mb-4 flex items-center">
-              <Info className="h-5 w-5 mr-2" />
+          <section className="rounded-lg bg-info/10 p-4">
+            <h3 className="mb-3 flex items-center gap-2 font-medium">
+              <Euro className="size-4" />
               Informations principales
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <span className="text-sm font-medium text-blue-700 flex items-center">
-                  <Euro className="h-4 w-4 mr-1" />
-                  Montant:
-                </span>
-                <p className="text-blue-900 font-semibold text-lg">
-                  {formatAmount(transaction.montant)}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-blue-700 flex items-center">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Date comptable:
-                </span>
-                <p className="text-blue-900">{transaction.dateComptable}</p>
-              </div>
-            </div>
-          </div>
+            <DataList
+              items={[
+                {
+                  label: "Montant",
+                  value: (
+                    <span className="text-lg font-semibold">
+                      {formatAmount(transaction.montant)}
+                    </span>
+                  ),
+                },
+                { label: "Date comptable", value: transaction.dateComptable },
+              ]}
+            />
+          </section>
 
           {/* Libellés */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-3">Libellés</h3>
-            <div className="space-y-3">
+          <section className="space-y-3 rounded-lg bg-muted/50 p-4">
+            <h3 className="font-medium">Libellés</h3>
+            <div>
+              <span className="text-sm font-medium text-muted-foreground">
+                Libellé principal:
+              </span>
+              <p className="mt-1 rounded border bg-card p-3 text-sm">
+                {transaction.libelles || "Aucun libellé"}
+              </p>
+            </div>
+            {transaction.detailsMouvement && (
               <div>
-                <span className="text-sm font-medium text-gray-700">
-                  Libellé principal:
+                <span className="text-sm font-medium text-muted-foreground">
+                  Détails du mouvement:
                 </span>
-                <p className="text-gray-900 mt-1 p-3 bg-white rounded border text-sm">
-                  {transaction.libelles || "Aucun libellé"}
+                <p className="mt-1 rounded border bg-card p-3 text-sm whitespace-pre-wrap">
+                  {transaction.detailsMouvement}
                 </p>
               </div>
-              {transaction.detailsMouvement && (
-                <div>
-                  <span className="text-sm font-medium text-gray-700">
-                    Détails du mouvement:
-                  </span>
-                  <p className="text-gray-900 mt-1 p-3 bg-white rounded border text-sm whitespace-pre-wrap">
-                    {transaction.detailsMouvement}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+            )}
+          </section>
         </div>
 
-        <div className="flex justify-end p-6 border-t bg-gray-50">
-          <button
-            onClick={onClose}
-            className="cursor-pointer px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
             Fermer
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -121,33 +95,30 @@ export default function TransactionDetailsModal({
 interface TransactionDetailsButtonProps {
   transaction: DetailedBankTransaction;
   className?: string;
-  size?: "sm" | "md";
 }
 
 export function TransactionDetailsButton({
   transaction,
   className = "",
-  size = "sm",
 }: TransactionDetailsButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const sizeClasses = {
-    sm: "h-5 w-5",
-    md: "h-6 w-6",
-  };
-
   return (
     <>
-      <button
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-xs"
+        className={className}
+        title="Voir les détails de la transaction"
+        aria-label="Voir les détails de la transaction"
         onClick={(e) => {
           e.stopPropagation();
           setIsModalOpen(true);
         }}
-        className={`text-gray-400 hover:text-blue-600 transition-colors cursor-pointer ${className}`}
-        title="Voir les détails de la transaction"
       >
-        <Eye className={sizeClasses[size]} />
-      </button>
+        <Eye />
+      </Button>
 
       <TransactionDetailsModal
         transaction={transaction}

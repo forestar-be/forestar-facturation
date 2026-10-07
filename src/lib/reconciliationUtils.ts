@@ -1,3 +1,5 @@
+import type { StatusTone } from "@forestar-be/ui";
+
 export const getStatusLabel = (status: string) => {
   switch (status) {
     case "COMPLETED":
@@ -95,101 +97,60 @@ export const getValidationStatusLabel = (validationStatus?: string) => {
   }
 };
 
-// Nouvelle fonction pour obtenir la couleur du statut de validation (texte seulement)
-export const getValidationStatusColor = (validationStatus?: string) => {
-  switch (validationStatus) {
-    case "VALIDATED":
-      return "text-emerald-600";
-    case "REJECTED":
-      return "text-rose-600";
+/** Intention d'un statut de réconciliation, pour `StatusBadge`. */
+export const getStatusTone = (status: string): StatusTone => {
+  switch (status) {
+    case "COMPLETED":
+      return "success";
+    case "ERROR":
+      return "danger";
+    case "PROCESSING":
+      return "info";
     case "PENDING":
-      return "text-yellow-600";
+      return "warning";
     default:
-      return "text-yellow-600";
+      return "neutral";
   }
 };
 
-// Nouvelle fonction pour obtenir la couleur de chip du statut de validation
-export const getValidationStatusChipColor = (validationStatus?: string) => {
+/** Intention du statut de validation d'une correspondance. */
+export const getValidationStatusTone = (
+  validationStatus?: string
+): StatusTone => {
   switch (validationStatus) {
     case "VALIDATED":
-      return "bg-emerald-100 text-emerald-800";
+      return "success";
     case "REJECTED":
-      return "bg-rose-100 text-rose-800";
-    case "PENDING":
-      return "bg-yellow-100 text-yellow-800";
+      return "danger";
     default:
-      return "bg-yellow-100 text-yellow-800";
+      return "warning";
   }
 };
 
-// Nouvelle fonction pour obtenir la couleur du type uniquement
-export const getMatchTypeOnlyColor = (
+/**
+ * Intention du type de correspondance : plus l'algorithme est sûr, plus la
+ * teinte est franche. Une correspondance manuelle est un choix de la personne,
+ * pas un score : elle reste neutre.
+ */
+export const getMatchTypeTone = (
   matchType: string,
   isManualMatch?: boolean
-) => {
-  if (isManualMatch) {
-    return "bg-purple-100 text-purple-800";
-  }
+): StatusTone => {
+  if (isManualMatch) return "neutral";
 
   switch (matchType) {
     case "EXACT_REF":
-      return "bg-green-100 text-green-800";
+      return "success";
     case "EXACT_AMOUNT":
-      return "bg-blue-100 text-blue-800";
     case "REFINED_AMOUNT":
-      return "bg-teal-100 text-teal-800";
     case "SIMPLE_NAME":
-      return "bg-indigo-100 text-indigo-800";
+      return "info";
     case "FUZZY_NAME":
-      return "bg-yellow-100 text-yellow-800";
-    case "COMBINED":
-      return "bg-purple-100 text-purple-800";
+      return "warning";
     case "NONE":
-      return "bg-red-100 text-red-800";
+      return "danger";
     default:
-      return "bg-gray-100 text-gray-800";
-  }
-};
-
-export const getMatchTypeColor = (
-  matchType: string,
-  validationStatus?: string,
-  isManualMatch?: boolean
-) => {
-  // Si c'est une correspondance manuelle, afficher en violet
-  if (isManualMatch) {
-    return "bg-purple-100 text-purple-800";
-  }
-
-  // Si c'est validé, afficher en vert foncé
-  if (validationStatus === "VALIDATED") {
-    return "bg-emerald-100 text-emerald-800";
-  }
-
-  // Si c'est rejeté, afficher en rouge foncé
-  if (validationStatus === "REJECTED") {
-    return "bg-rose-100 text-rose-800";
-  }
-
-  // Sinon, afficher la couleur normale du type de correspondance
-  switch (matchType) {
-    case "EXACT_REF":
-      return "bg-green-100 text-green-800";
-    case "EXACT_AMOUNT":
-      return "bg-blue-100 text-blue-800";
-    case "REFINED_AMOUNT":
-      return "bg-teal-100 text-teal-800";
-    case "SIMPLE_NAME":
-      return "bg-indigo-100 text-indigo-800";
-    case "FUZZY_NAME":
-      return "bg-yellow-100 text-yellow-800";
-    case "COMBINED":
-      return "bg-purple-100 text-purple-800";
-    case "NONE":
-      return "bg-red-100 text-red-800";
-    default:
-      return "bg-gray-100 text-gray-800";
+      return "neutral";
   }
 };
 
@@ -233,10 +194,53 @@ export const getReconciliationDisplayTitle = (
   if (title && title.trim()) {
     return capitalizeFirstLetter(title.trim());
   }
-  
+
   if (createdAt) {
     return `Réconciliation du ${formatDate(createdAt)}`;
   }
-  
+
   return "Réconciliation";
+};
+
+export interface ConfidenceDisplay {
+  percent: number;
+  tone: "primary" | "success" | "warning" | "danger";
+  label: string;
+}
+
+/**
+ * Niveau de confiance affiché d'une correspondance : une correspondance
+ * manuelle ou validée vaut 100 %, une rejetée 0 %, les autres leur score
+ * (vert à partir de 80, jaune à partir de 50, rouge en dessous).
+ *
+ * `hasTransaction` à `false` donne 0 % à une correspondance non manuelle et non
+ * rejetée : sans transaction, il n'y a rien à valider.
+ */
+export const getConfidenceDisplay = (
+  match: {
+    isManualMatch: boolean;
+    validationStatus?: string;
+    confidence: number;
+  },
+  hasTransaction: boolean
+): ConfidenceDisplay => {
+  if (match.isManualMatch && hasTransaction) {
+    return { percent: 100, tone: "primary", label: "100%" };
+  }
+  if (match.validationStatus === "VALIDATED" && hasTransaction) {
+    return { percent: 100, tone: "success", label: "100%" };
+  }
+  if (match.validationStatus === "REJECTED" || !hasTransaction) {
+    return { percent: 0, tone: "danger", label: "0%" };
+  }
+  return {
+    percent: match.confidence,
+    tone:
+      match.confidence >= 80
+        ? "success"
+        : match.confidence >= 50
+          ? "warning"
+          : "danger",
+    label: `${match.confidence.toFixed(0)}%`,
+  };
 };
