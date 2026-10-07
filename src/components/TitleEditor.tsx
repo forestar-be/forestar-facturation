@@ -62,7 +62,7 @@ export default function TitleEditor({
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          aria-label="Titre de la réconciliation"
+          aria-label="Titre du rapprochement"
           className="h-10 min-w-0 flex-1 text-xl font-semibold md:text-xl"
           autoFocus
           disabled={isSaving}

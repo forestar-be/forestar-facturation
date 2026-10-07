@@ -11,7 +11,7 @@ import AppMenu from "@/components/AppMenu";
 import { useAuth } from "@/lib/auth";
 
 const navItems: AppShellNavItem[] = [
-  { href: "/", label: "Nouvelle réconciliation", icon: Home },
+  { href: "/", label: "Nouveau rapprochement", icon: Home },
   { href: "/reconciliations", label: "Historique", icon: History },
 ];
 
@@ -40,7 +40,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SharedAppShell
       navItems={navItems}
-      brand={{ title: "Facturation", logo, href: "/" }}
+      brand={{ title: "Rapprochement", logo, href: "/" }}
       onLogout={logOut}
       // Sans slot, AppShell affiche son bouton de déconnexion : c'est le rendu
       // voulu en mode historique, qui n'a ni identité ni console.

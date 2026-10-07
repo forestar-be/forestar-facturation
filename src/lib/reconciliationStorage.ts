@@ -1,4 +1,4 @@
-// Service pour gérer l'état des réconciliations en localStorage
+// Service pour gérer l'état des rapprochements en localStorage
 
 interface ReconciliationState {
   reconciliationId: string;
@@ -12,7 +12,7 @@ interface ReconciliationState {
 const STORAGE_KEY = "facturation_reconciliation_state";
 
 export const ReconciliationStorage = {
-  // Sauvegarder l'état d'une réconciliation
+  // Sauvegarder l'état d'un rapprochement
   saveState: (state: ReconciliationState) => {
     if (typeof window === "undefined") return;
 
@@ -20,13 +20,13 @@ export const ReconciliationStorage = {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (error) {
       console.error(
-        "Erreur lors de la sauvegarde de l'état de réconciliation:",
+        "Erreur lors de la sauvegarde de l'état de rapprochement:",
         error
       );
     }
   },
 
-  // Récupérer l'état d'une réconciliation
+  // Récupérer l'état d'un rapprochement
   getState: (): ReconciliationState | null => {
     if (typeof window === "undefined") return null;
 
@@ -49,7 +49,7 @@ export const ReconciliationStorage = {
       return state;
     } catch (error) {
       console.error(
-        "Erreur lors de la récupération de l'état de réconciliation:",
+        "Erreur lors de la récupération de l'état de rapprochement:",
         error
       );
       localStorage.removeItem(STORAGE_KEY);
@@ -57,13 +57,13 @@ export const ReconciliationStorage = {
     }
   },
 
-  // Supprimer l'état d'une réconciliation
+  // Supprimer l'état d'un rapprochement
   clearState: () => {
     if (typeof window === "undefined") return;
     localStorage.removeItem(STORAGE_KEY);
   },
 
-  // Vérifier s'il y a une réconciliation en cours
+  // Vérifier s'il y a un rapprochement en cours
   hasActiveReconciliation: (): boolean => {
     const state = ReconciliationStorage.getState();
     return (
@@ -72,7 +72,7 @@ export const ReconciliationStorage = {
     );
   },
 
-  // Mettre à jour le statut d'une réconciliation existante
+  // Mettre à jour le statut d'un rapprochement existant
   updateStatus: (
     status: ReconciliationState["status"],
     progress: number,

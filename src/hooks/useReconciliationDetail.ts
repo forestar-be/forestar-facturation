@@ -200,10 +200,10 @@ export function useReconciliationDetail(reconciliationId: string) {
         if (data) {
           setReconciliation(data);
         } else {
-          setError("Réconciliation non trouvée");
+          setError("Rapprochement non trouvé");
         }
       } catch (err) {
-        setError("Erreur lors du chargement de la réconciliation");
+        setError("Erreur lors du chargement du rapprochement");
         console.error(err);
       } finally {
         setLoading(false);

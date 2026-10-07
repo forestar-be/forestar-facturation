@@ -4,7 +4,7 @@ import type { InvoiceFamilySummary } from "@/types";
 export const getStatusLabel = (status: string) => {
   switch (status) {
     case "COMPLETED":
-      return "Terminée";
+      return "Terminé";
     case "ERROR":
       return "Erreur";
     case "PROCESSING":
@@ -98,7 +98,7 @@ export const getValidationStatusLabel = (validationStatus?: string) => {
   }
 };
 
-/** Intention d'un statut de réconciliation, pour `StatusBadge`. */
+/** Intention d'un statut de rapprochement, pour `StatusBadge`. */
 export const getStatusTone = (status: string): StatusTone => {
   switch (status) {
     case "COMPLETED":
@@ -187,7 +187,7 @@ export const capitalizeFirstLetter = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
-// Formate le titre d'affichage d'une réconciliation
+// Formate le titre d'affichage d'un rapprochement
 export const getReconciliationDisplayTitle = (
   title?: string,
   createdAt?: string
@@ -197,10 +197,10 @@ export const getReconciliationDisplayTitle = (
   }
 
   if (createdAt) {
-    return `Réconciliation du ${formatDate(createdAt)}`;
+    return `Rapprochement du ${formatDate(createdAt)}`;
   }
 
-  return "Réconciliation";
+  return "Rapprochement";
 };
 
 export interface ConfidenceDisplay {

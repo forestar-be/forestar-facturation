@@ -129,7 +129,7 @@ const apiRequest = async (
   return data;
 };
 
-// Upload des fichiers et démarrage de la réconciliation
+// Upload des fichiers et démarrage du rapprochement
 export const uploadFiles = async (
   invoicesFile: File,
   transactionsFile: File,
@@ -313,7 +313,7 @@ export const uploadWithDolibarr = async (
   }
 };
 
-// Récupère le statut d'une réconciliation
+// Récupère le statut d'un rapprochement
 export const getReconciliationStatus = async (
   reconciliationId: string
 ): Promise<{
@@ -340,7 +340,7 @@ export const getReconciliationStatus = async (
   }
 };
 
-// Récupère le résultat d'une réconciliation
+// Récupère le résultat d'un rapprochement
 export const getReconciliationResult = async (
   reconciliationId: string
 ): Promise<any | null> => {
@@ -370,10 +370,10 @@ export const getStatusMessage = (status: any): string => {
       baseMessage = `Traitement en cours... (${status.progress || 0}%)`;
       break;
     case "COMPLETED":
-      baseMessage = "Réconciliation terminée";
+      baseMessage = "Rapprochement terminé";
       break;
     case "ERROR":
-      baseMessage = status.error || "Erreur lors de la réconciliation";
+      baseMessage = status.error || "Erreur lors du rapprochement";
       break;
     default:
       baseMessage = "Statut inconnu";
@@ -384,7 +384,7 @@ export const getStatusMessage = (status: any): string => {
   return status.message || baseMessage;
 };
 
-// Télécharger le fichier XLSX de réconciliation
+// Télécharger le fichier XLSX de rapprochement
 export const downloadReconciliationFile = async (
   downloadUrl: string,
   fileName: string
@@ -426,19 +426,19 @@ export const downloadReconciliationFile = async (
 
 // === NOUVELLES FONCTIONS POUR LE SYSTÈME DE GESTION ===
 
-// Récupérer toutes les réconciliations
+// Récupérer tous les rapprochements
 export const getAllReconciliations = async (): Promise<
   ReconciliationSummary[]
 > => {
   try {
     return await apiRequest("/facturation/reconciliations", "GET");
   } catch (error) {
-    console.error("Erreur réconciliations:", error);
+    console.error("Erreur rapprochements:", error);
     return [];
   }
 };
 
-// Récupérer les détails d'une réconciliation
+// Récupérer les détails d'un rapprochement
 export const getReconciliationDetails = async (
   reconciliationId: string
 ): Promise<ReconciliationDetails | null> => {
@@ -448,7 +448,7 @@ export const getReconciliationDetails = async (
       "GET"
     );
   } catch (error) {
-    console.error("Erreur détails réconciliation:", error);
+    console.error("Erreur détails rapprochement:", error);
     if (isHttpError(error) && error.status === 404) {
       return null;
     }
@@ -596,7 +596,7 @@ export const rejectMatch = async (
   }
 };
 
-// Supprimer une réconciliation
+// Supprimer un rapprochement
 export const deleteReconciliation = async (
   reconciliationId: string
 ): Promise<boolean> => {
@@ -607,12 +607,12 @@ export const deleteReconciliation = async (
     );
     return true;
   } catch (error) {
-    console.error("Erreur suppression réconciliation:", error);
+    console.error("Erreur suppression rapprochement:", error);
     return false;
   }
 };
 
-// Mettre à jour le titre d'une réconciliation
+// Mettre à jour le titre d'un rapprochement
 export const updateReconciliationTitle = async (
   reconciliationId: string,
   title: string

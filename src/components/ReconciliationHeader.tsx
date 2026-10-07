@@ -82,7 +82,7 @@ export default function ReconciliationHeader({
           <TitleEditor
             title={displayTitle}
             onSave={handleTitleSave}
-            placeholder="Entrez un titre pour cette réconciliation"
+            placeholder="Entrez un titre pour ce rapprochement"
             className="w-full"
           />
           <div className="mt-1 flex flex-wrap items-center text-sm text-muted-foreground">
@@ -128,7 +128,7 @@ export default function ReconciliationHeader({
                     </li>
                   </ul>
                   <p className="mt-3 text-xs">
-                    Seules les factures nécessitant une réconciliation bancaire
+                    Seules les factures nécessitant un rapprochement bancaire
                     sont incluses.
                   </p>
                 </div>

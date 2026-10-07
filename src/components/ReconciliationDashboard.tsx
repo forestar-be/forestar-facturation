@@ -126,7 +126,7 @@ export default function ReconciliationDashboard() {
   // Ref pour stocker l'ID du timeout de polling
   const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Vérifier s'il y a une réconciliation en cours au chargement
+  // Vérifier s'il y a un rapprochement en cours au chargement
   useEffect(() => {
     const activeState = ReconciliationStorage.getState();
     if (
@@ -138,10 +138,10 @@ export default function ReconciliationDashboard() {
       setUploadProgress({
         status: activeState.status.toLowerCase(),
         progress: activeState.progress,
-        message: activeState.message || "Réconciliation en cours...",
+        message: activeState.message || "Rapprochement en cours...",
       });
 
-      // Vider les fichiers sélectionnés pendant la réconciliation
+      // Vider les fichiers sélectionnés pendant le rapprochement
       setSelectedFiles({ invoices: null, transactions: null });
       setFileNames({ invoices: "", transactions: "" });
       resetInvoicePreview();
@@ -169,7 +169,7 @@ export default function ReconciliationDashboard() {
       if (!status) {
         setErrors((prev) => ({
           ...prev,
-          reconciliation: "Réconciliation non trouvée",
+          reconciliation: "Rapprochement non trouvé",
         }));
         stopPolling();
         return;
@@ -212,7 +212,7 @@ export default function ReconciliationDashboard() {
       if (status.status === "ERROR") {
         setErrors((prev) => ({
           ...prev,
-          reconciliation: status.error || "Erreur lors de la réconciliation",
+          reconciliation: status.error || "Erreur lors du rapprochement",
         }));
         stopPolling();
         return;
@@ -308,18 +308,18 @@ export default function ReconciliationDashboard() {
         ...prev,
         reconciliation:
           source === "dolibarr"
-            ? "Veuillez lire les factures dans Dolibarr et sélectionner le fichier banque avant de lancer la réconciliation"
-            : "Veuillez sélectionner les deux fichiers avant de lancer la réconciliation",
+            ? "Veuillez lire les factures dans Dolibarr et sélectionner le fichier banque avant de lancer le rapprochement"
+            : "Veuillez sélectionner les deux fichiers avant de lancer le rapprochement",
       }));
       return;
     }
 
-    // Vérifier s'il y a déjà une réconciliation en cours
+    // Vérifier s'il y a déjà un rapprochement en cours
     if (ReconciliationStorage.hasActiveReconciliation()) {
       setErrors((prev) => ({
         ...prev,
         reconciliation:
-          "Une réconciliation est déjà en cours. Veuillez attendre qu'elle se termine.",
+          "Un rapprochement est déjà en cours. Veuillez attendre qu'il se termine.",
       }));
       return;
     }
@@ -328,7 +328,7 @@ export default function ReconciliationDashboard() {
     setErrors((prev) => ({ ...prev, reconciliation: "" }));
 
     try {
-      // Upload des fichiers et lancement de la réconciliation
+      // Upload des fichiers et lancement du rapprochement
       const families = (
         source === "dolibarr"
           ? dolibarr.state.status === "done"
@@ -363,10 +363,10 @@ export default function ReconciliationDashboard() {
         throw new Error(uploadResult.message);
       }
 
-      // Seulement si l'upload réussit, on passe en mode "réconciliation active"
+      // Seulement si l'upload réussit, on passe en mode "rapprochement actif"
       setHasActiveReconciliation(true);
 
-      // Vider les fichiers sélectionnés pendant la réconciliation
+      // Vider les fichiers sélectionnés pendant le rapprochement
       setSelectedFiles({ invoices: null, transactions: null });
       setFileNames({ invoices: "", transactions: "" });
       resetInvoicePreview();
@@ -394,7 +394,7 @@ export default function ReconciliationDashboard() {
       setErrors((prev) => ({
         ...prev,
         reconciliation:
-          "Erreur lors de la réconciliation:\n" + (error as Error).message,
+          "Erreur lors du rapprochement:\n" + (error as Error).message,
       }));
       stopPolling();
     }
@@ -448,8 +448,8 @@ export default function ReconciliationDashboard() {
     <div className="space-y-8">
       {/* En-tête */}
       <PageHeader
-        title="Réconciliation Bancaire"
-        description="Importez vos fichiers de factures et d'extraits bancaires pour lancer la réconciliation automatique"
+        title="Rapprochement bancaire"
+        description="Importez vos fichiers de factures et d'extraits bancaires pour lancer le rapprochement automatique"
       />
 
       {/* Section d'import des fichiers */}
@@ -586,14 +586,14 @@ export default function ReconciliationDashboard() {
               <div>
                 <h2 className="text-lg font-semibold">
                   {hasActiveReconciliation
-                    ? "Réconciliation en cours"
-                    : "Lancer la Réconciliation"}
+                    ? "Rapprochement en cours"
+                    : "Lancer le rapprochement"}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {hasActiveReconciliation
-                    ? "Une réconciliation est actuellement en cours de traitement"
+                    ? "Un rapprochement est actuellement en cours de traitement"
                     : canReconcile
-                      ? "Tous les fichiers sont prêts, vous pouvez lancer la réconciliation"
+                      ? "Tous les fichiers sont prêts, vous pouvez lancer le rapprochement"
                       : familiesLoaded && selectedFamilies.size === 0
                         ? "Cochez au moins une famille de factures pour continuer"
                         : source === "dolibarr"
@@ -609,8 +609,8 @@ export default function ReconciliationDashboard() {
                     <Play />
                   )}
                   {loadingStates.reconciliation
-                    ? "Réconciliation..."
-                    : "Lancer la réconciliation"}
+                    ? "Rapprochement..."
+                    : "Lancer le rapprochement"}
                 </Button>
               )}
             </div>
@@ -641,17 +641,17 @@ export default function ReconciliationDashboard() {
         />
       )}
 
-      {/* Section nouvelle réconciliation */}
+      {/* Section nouveau rapprochement */}
       {!hasActiveReconciliation && (
         <Card>
           <CardContent>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-semibold">
-                  Historique des Réconciliations
+                  Historique des rapprochements
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Consultez vos réconciliations précédentes
+                  Consultez vos rapprochements précédents
                 </p>
               </div>
               <Button onClick={() => router.push("/reconciliations")}>
