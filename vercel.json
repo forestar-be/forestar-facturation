@@ -1,4 +1,17 @@
 {
   "framework": "nextjs",
-  "installCommand": "pnpm install --frozen-lockfile"
+  "installCommand": "pnpm install --frozen-lockfile",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "facturation.forestar.be"
+        }
+      ],
+      "destination": "https://rapprochement.forestar.be/:path*",
+      "permanent": true
+    }
+  ]
 }
