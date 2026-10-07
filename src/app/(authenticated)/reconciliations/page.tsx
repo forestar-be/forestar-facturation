@@ -11,11 +11,12 @@ import {
   StatusBadge,
   type ColumnDef,
 } from "@forestar-be/ui";
-import { Clock, Eye, FileText, Plus, Trash2 } from "lucide-react";
+import { Clock, Eye, FileText, Layers, Plus, Trash2 } from "lucide-react";
 import StatusIcon from "@/components/StatusIcon";
 import { deleteReconciliation, getAllReconciliations } from "@/lib/api";
 import {
   formatDuration,
+  formatInvoiceFamilies,
   getReconciliationDisplayTitle,
   getStatusLabel,
   getStatusTone,
@@ -112,6 +113,11 @@ export default function ReconciliationsPage() {
                   <span className="flex items-center gap-1.5">
                     <FileText className="size-3.5 shrink-0" />
                     {reconciliation.transactionsFileName}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Layers className="size-3.5 shrink-0" />
+                    Familles :{" "}
+                    {formatInvoiceFamilies(reconciliation.invoiceFamilies)}
                   </span>
                   <span className="flex items-center gap-1.5">
                     <Clock className="size-3.5 shrink-0" />

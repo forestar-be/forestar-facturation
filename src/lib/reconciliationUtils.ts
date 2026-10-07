@@ -1,4 +1,5 @@
 import type { StatusTone } from "@forestar-be/ui";
+import type { InvoiceFamilySummary } from "@/types";
 
 export const getStatusLabel = (status: string) => {
   switch (status) {
@@ -244,3 +245,26 @@ export const getConfidenceDisplay = (
     label: `${match.confidence.toFixed(0)}%`,
   };
 };
+
+/**
+ * Familles de factures retenues au lancement (R005), pour l'historique et le
+ * détail. Liste absente ou vide : rapprochement antérieur, toutes les factures.
+ */
+export const formatInvoiceFamilies = (families?: string[] | null): string =>
+  families && families.length > 0 ? families.join(", ") : "Toutes";
+
+/** Cumul des familles cochées : lignes, dont écartées d'office, et total TTC. */
+export const summarizeSelectedFamilies = (
+  families: InvoiceFamilySummary[],
+  selected: ReadonlySet<string>
+) =>
+  families
+    .filter((f) => selected.has(f.family))
+    .reduce(
+      (total, f) => ({
+        count: total.count + f.count,
+        excludedCash: total.excludedCash + f.excludedCash,
+        totalTTC: total.totalTTC + f.totalTTC,
+      }),
+      { count: 0, excludedCash: 0, totalTTC: 0 }
+    );

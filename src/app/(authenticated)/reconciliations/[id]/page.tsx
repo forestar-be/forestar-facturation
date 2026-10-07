@@ -235,6 +235,7 @@ export default function ReconciliationDetailPage() {
       <FileInfo
         invoicesFileName={reconciliation.invoicesFileName}
         transactionsFileName={reconciliation.transactionsFileName}
+        invoiceFamilies={reconciliation.invoiceFamilies}
       />
 
       {/* Modal d'édition des correspondances */}

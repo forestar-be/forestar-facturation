@@ -119,6 +119,8 @@ export interface ReconciliationSummary {
   reconciliationRate: number;
   errorMessage?: string;
   createdAt: string;
+  /** Familles de factures retenues au lancement (R005) ; vide : anciennes, toutes. */
+  invoiceFamilies?: string[];
 }
 
 export interface ReconciliationDetails {
@@ -140,6 +142,8 @@ export interface ReconciliationDetails {
   errorMessage?: string;
   createdAt: string;
   updatedAt: string;
+  /** Familles de factures retenues au lancement (R005) ; vide : toutes. */
+  invoiceFamilies?: string[];
   invoices: DetailedInvoice[];
   transactions: DetailedBankTransaction[];
   matches: DetailedReconciliationMatch[];
@@ -267,4 +271,18 @@ export interface MatchModificationResult {
   action?: string;
   matchId?: string;
   error?: string;
+}
+
+// === Choix des factures (R005) ===
+
+/** Une famille de factures trouvée dans la source (FA, FS, AV, PROV…). */
+export interface InvoiceFamilySummary {
+  family: string;
+  label: string;
+  /** Lignes de la famille, espèces et comptoir compris. */
+  count: number;
+  totalTTC: number;
+  /** Lignes de la famille écartées de toute façon (espèces, vente comptoir). */
+  excludedCash: number;
+  defaultSelected: boolean;
 }

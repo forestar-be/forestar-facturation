@@ -4,14 +4,17 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import ReconciliationProgress from "@/components/ReconciliationProgress";
 import DolibarrExportHelp from "@/components/DolibarrExportHelp";
+import InvoiceFamilyPicker from "@/components/InvoiceFamilyPicker";
 import { validateCSVFile } from "@/lib/csvUtils";
 import {
   uploadFiles,
+  previewInvoices,
   getReconciliationStatus,
   getReconciliationResult,
   getStatusMessage,
 } from "@/lib/api";
 import { ReconciliationStorage } from "@/lib/reconciliationStorage";
+import type { InvoiceFamilySummary } from "@/types";
 import { FileText, Play, RefreshCw } from "lucide-react";
 import {
   Button,
@@ -21,6 +24,12 @@ import {
   PageHeader,
   Spinner,
 } from "@forestar-be/ui";
+
+/** Aperçu des familles de factures du fichier déposé (R005). */
+type InvoicePreview =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "done"; families: InvoiceFamilySummary[] };
 
 export default function ReconciliationDashboard() {
   const router = useRouter();
@@ -58,6 +67,17 @@ export default function ReconciliationDashboard() {
 
   const [hasActiveReconciliation, setHasActiveReconciliation] = useState(false);
 
+  // Familles trouvées dans le fichier factures et celles qui sont cochées.
+  const [invoicePreview, setInvoicePreview] = useState<InvoicePreview>({
+    status: "idle",
+  });
+  const [selectedFamilies, setSelectedFamilies] = useState<Set<string>>(
+    new Set()
+  );
+  // Numéro de la dernière demande d'aperçu : une réponse tardive d'un fichier
+  // remplacé ou retiré entre-temps est ignorée.
+  const previewRequestRef = useRef(0);
+
   // Ref pour stocker l'ID du timeout de polling
   const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -79,6 +99,7 @@ export default function ReconciliationDashboard() {
       // Vider les fichiers sélectionnés pendant la réconciliation
       setSelectedFiles({ invoices: null, transactions: null });
       setFileNames({ invoices: "", transactions: "" });
+      resetInvoicePreview();
 
       // Reprendre le polling
       startPolling(activeState.reconciliationId);
@@ -179,6 +200,12 @@ export default function ReconciliationDashboard() {
     ReconciliationStorage.clearState();
   };
 
+  const resetInvoicePreview = () => {
+    previewRequestRef.current += 1;
+    setInvoicePreview({ status: "idle" });
+    setSelectedFamilies(new Set());
+  };
+
   const handleInvoiceFileSelect = async (file: File) => {
     const validation = validateCSVFile(file);
     if (!validation.valid) {
@@ -189,6 +216,29 @@ export default function ReconciliationDashboard() {
     setErrors((prev) => ({ ...prev, invoices: "", reconciliation: "" }));
     setSelectedFiles((prev) => ({ ...prev, invoices: file }));
     setFileNames((prev) => ({ ...prev, invoices: file.name }));
+
+    // Dès le dépôt, le serveur lit les familles (rien n'est enregistré).
+    const requestId = ++previewRequestRef.current;
+    setInvoicePreview({ status: "loading" });
+    setSelectedFamilies(new Set());
+    const preview = await previewInvoices(file);
+    if (requestId !== previewRequestRef.current) return;
+
+    if (preview.ok) {
+      setInvoicePreview({ status: "done", families: preview.families });
+      setSelectedFamilies(
+        new Set(
+          preview.families.filter((f) => f.defaultSelected).map((f) => f.family)
+        )
+      );
+    } else {
+      // Fichier illisible (colonnes manquantes…) : on le retire et on affiche
+      // le message du serveur, avec l'aide d'export à côté.
+      setInvoicePreview({ status: "idle" });
+      setSelectedFiles((prev) => ({ ...prev, invoices: null }));
+      setFileNames((prev) => ({ ...prev, invoices: "" }));
+      setErrors((prev) => ({ ...prev, invoices: preview.message }));
+    }
   };
 
   const handleTransactionFileSelect = async (file: File) => {
@@ -230,7 +280,12 @@ export default function ReconciliationDashboard() {
       // Upload des fichiers et lancement de la réconciliation
       const uploadResult = await uploadFiles(
         selectedFiles.invoices,
-        selectedFiles.transactions
+        selectedFiles.transactions,
+        invoicePreview.status === "done"
+          ? invoicePreview.families
+              .map((f) => f.family)
+              .filter((family) => selectedFamilies.has(family))
+          : undefined
       );
 
       if (!uploadResult.success || !uploadResult.reconciliationId) {
@@ -244,6 +299,7 @@ export default function ReconciliationDashboard() {
       // Vider les fichiers sélectionnés pendant la réconciliation
       setSelectedFiles({ invoices: null, transactions: null });
       setFileNames({ invoices: "", transactions: "" });
+      resetInvoicePreview();
 
       // Sauvegarder l'état dans localStorage
       ReconciliationStorage.saveState({
@@ -278,11 +334,19 @@ export default function ReconciliationDashboard() {
   const handleFileClear = (kind: "invoices" | "transactions") => {
     setSelectedFiles((prev) => ({ ...prev, [kind]: null }));
     setFileNames((prev) => ({ ...prev, [kind]: "" }));
+    if (kind === "invoices") {
+      resetInvoicePreview();
+      setErrors((prev) => ({ ...prev, invoices: "" }));
+    }
   };
+
+  const familiesReady =
+    invoicePreview.status === "done" && selectedFamilies.size > 0;
 
   const canReconcile =
     selectedFiles.invoices &&
     selectedFiles.transactions &&
+    familiesReady &&
     !loadingStates.reconciliation;
 
   return (
@@ -317,6 +381,23 @@ export default function ReconciliationDashboard() {
                 <div className="text-sm text-success">
                   ✓ Fichier sélectionné: {fileNames.invoices}
                 </div>
+              )}
+              {errors.invoices && <DolibarrExportHelp />}
+              {invoicePreview.status === "loading" && (
+                <div
+                  role="status"
+                  className="flex items-center gap-2 text-sm text-muted-foreground"
+                >
+                  <Spinner size="sm" />
+                  Lecture des familles de factures…
+                </div>
+              )}
+              {invoicePreview.status === "done" && (
+                <InvoiceFamilyPicker
+                  families={invoicePreview.families}
+                  selected={selectedFamilies}
+                  onChange={setSelectedFamilies}
+                />
               )}
             </CardContent>
           </Card>
@@ -365,7 +446,10 @@ export default function ReconciliationDashboard() {
                     ? "Une réconciliation est actuellement en cours de traitement"
                     : canReconcile
                       ? "Tous les fichiers sont prêts, vous pouvez lancer la réconciliation"
-                      : "Sélectionnez les deux fichiers pour continuer"}
+                      : invoicePreview.status === "done" &&
+                          selectedFamilies.size === 0
+                        ? "Cochez au moins une famille de factures pour continuer"
+                        : "Sélectionnez les deux fichiers pour continuer"}
                 </p>
               </div>
               {!hasActiveReconciliation && (
