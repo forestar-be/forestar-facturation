@@ -10,6 +10,7 @@ import {
   MatchModificationResult,
   DetailedReconciliationMatch,
   InvoiceFamilySummary,
+  DolibarrReadStatus,
 } from "@/types";
 
 import { API_URL, getSessionClient, SSO_ENABLED } from "./session";
@@ -202,6 +203,112 @@ export const previewInvoices = async (
       message: isHttpError(error)
         ? error.message
         : "Impossible de lire le fichier de factures",
+    };
+  }
+};
+
+// === Source « Dolibarr » (R003) ===
+
+// Lance la lecture des factures d'une période (tâche de fond côté serveur)
+export const startDolibarrRead = async (
+  from: string,
+  to: string
+): Promise<{ ok: true; sourceId: string } | { ok: false; message: string }> => {
+  try {
+    const data = await apiRequest(
+      "/facturation/dolibarr/preview",
+      "POST",
+      undefined,
+      {
+        from,
+        to,
+      }
+    );
+    return { ok: true, sourceId: data.sourceId as string };
+  } catch (error) {
+    console.error("Erreur lecture Dolibarr:", error);
+    return {
+      ok: false,
+      message: isHttpError(error)
+        ? error.message
+        : "Impossible de lancer la lecture des factures Dolibarr",
+    };
+  }
+};
+
+// Avancement de la lecture ; `expired` quand le serveur répond 410
+export const getDolibarrRead = async (
+  sourceId: string
+): Promise<
+  | { ok: true; read: DolibarrReadStatus }
+  | { ok: false; message: string; expired: boolean }
+> => {
+  try {
+    const read = (await apiRequest(
+      `/facturation/dolibarr/preview/${sourceId}`,
+      "GET"
+    )) as DolibarrReadStatus;
+    return { ok: true, read };
+  } catch (error) {
+    console.error("Erreur suivi lecture Dolibarr:", error);
+    if (isHttpError(error)) {
+      return {
+        ok: false,
+        message: error.message,
+        expired: error.status === 410,
+      };
+    }
+    return {
+      ok: false,
+      message: "Impossible de suivre la lecture des factures Dolibarr",
+      expired: false,
+    };
+  }
+};
+
+// Lancement avec les factures lues dans Dolibarr + le fichier banque
+export const uploadWithDolibarr = async (
+  transactionsFile: File,
+  sourceId: string,
+  families?: string[]
+): Promise<{
+  success: boolean;
+  reconciliationId?: string;
+  message: string;
+  /** Vrai quand la lecture a expiré (410) : il faut relire les factures. */
+  expired?: boolean;
+}> => {
+  try {
+    const formData = new FormData();
+    formData.append("transactions", transactionsFile);
+    formData.append("sourceId", sourceId);
+    if (families) formData.append("families", JSON.stringify(families));
+
+    const data = await apiRequest(
+      "/facturation/dolibarr/upload",
+      "POST",
+      undefined,
+      formData,
+      {},
+      false
+    );
+    return {
+      success: data.success,
+      reconciliationId: data.reconciliationId,
+      message: data.message,
+    };
+  } catch (error) {
+    console.error("Erreur lancement Dolibarr:", error);
+    if (isHttpError(error)) {
+      return {
+        success: false,
+        message: error.message,
+        expired: error.status === 410,
+      };
+    }
+    return {
+      success: false,
+      message: "Erreur lors du lancement depuis Dolibarr",
     };
   }
 };

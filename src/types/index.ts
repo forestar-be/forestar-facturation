@@ -286,3 +286,17 @@ export interface InvoiceFamilySummary {
   excludedCash: number;
   defaultSelected: boolean;
 }
+
+// === Source « Dolibarr » (R003) ===
+
+/** Réponse de GET /facturation/dolibarr/preview/:sourceId. */
+export type DolibarrReadStatus =
+  | { status: "running"; pagesRead?: number; pageCount?: number }
+  | {
+      status: "done";
+      label: string;
+      count: number;
+      durationMs: number;
+      families: InvoiceFamilySummary[];
+    }
+  | { status: "error"; message: string };
