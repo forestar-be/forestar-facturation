@@ -9,6 +9,7 @@ import {
   MultipleResolutionRequest,
   MatchModificationResult,
   DetailedReconciliationMatch,
+  InvoiceFamilySummary,
 } from "@/types";
 
 import { API_URL, getSessionClient, SSO_ENABLED } from "./session";
@@ -130,7 +131,8 @@ const apiRequest = async (
 // Upload des fichiers et démarrage de la réconciliation
 export const uploadFiles = async (
   invoicesFile: File,
-  transactionsFile: File
+  transactionsFile: File,
+  families?: string[]
 ): Promise<{
   success: boolean;
   reconciliationId?: string;
@@ -140,6 +142,8 @@ export const uploadFiles = async (
     const formData = new FormData();
     formData.append("invoices", invoicesFile);
     formData.append("transactions", transactionsFile);
+    // Champ absent = toutes les familles, comme avant R005.
+    if (families) formData.append("families", JSON.stringify(families));
 
     const data = await apiRequest(
       "/facturation/upload",
@@ -166,6 +170,38 @@ export const uploadFiles = async (
     return {
       success: false,
       message: "Erreur lors de l'upload des fichiers",
+    };
+  }
+};
+
+/** Réponse de l'aperçu : les familles trouvées, ou le message du serveur. */
+export type InvoicePreviewResult =
+  | { ok: true; families: InvoiceFamilySummary[] }
+  | { ok: false; message: string };
+
+// Aperçu des familles de factures d'un fichier CSV, sans rien enregistrer (R005)
+export const previewInvoices = async (
+  invoicesFile: File
+): Promise<InvoicePreviewResult> => {
+  try {
+    const formData = new FormData();
+    formData.append("invoices", invoicesFile);
+    const data = await apiRequest(
+      "/facturation/preview",
+      "POST",
+      undefined,
+      formData,
+      {},
+      false
+    );
+    return { ok: true, families: data.families as InvoiceFamilySummary[] };
+  } catch (error) {
+    console.error("Erreur aperçu des factures:", error);
+    return {
+      ok: false,
+      message: isHttpError(error)
+        ? error.message
+        : "Impossible de lire le fichier de factures",
     };
   }
 };
