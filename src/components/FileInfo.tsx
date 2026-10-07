@@ -1,5 +1,6 @@
 import React from "react";
 import { FileText, CreditCard } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@forestar-be/ui";
 
 interface FileInfoProps {
   invoicesFileName: string;
@@ -11,28 +12,32 @@ export default function FileInfo({
   transactionsFileName,
 }: FileInfoProps) {
   return (
-    <div className="bg-white shadow rounded-lg">
-      <div className="px-4 py-5 sm:p-6">
-        <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">
-          Informations sur les fichiers
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <div className="flex items-center">
-              <FileText className="h-5 w-5 text-blue-500 mr-2" />
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Informations sur les fichiers</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <FileText className="size-5 text-info" />
               <span className="font-medium">Fichier factures</span>
             </div>
-            <p className="mt-1 text-sm text-gray-600">{invoicesFileName}</p>
+            <p className="mt-1 text-sm break-words text-muted-foreground">
+              {invoicesFileName}
+            </p>
           </div>
-          <div>
-            <div className="flex items-center">
-              <CreditCard className="h-5 w-5 text-green-500 mr-2" />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <CreditCard className="size-5 text-success" />
               <span className="font-medium">Fichier transactions</span>
             </div>
-            <p className="mt-1 text-sm text-gray-600">{transactionsFileName}</p>
+            <p className="mt-1 text-sm break-words text-muted-foreground">
+              {transactionsFileName}
+            </p>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

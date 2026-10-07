@@ -102,22 +102,6 @@ function getValidationOrder(
   return 2; // En attente
 }
 
-// Fonction pour obtenir l'ordre de validation pour le tri par défaut (validés à la fin)
-function getValidationOrderForDefault(
-  item: any,
-  getTransactionFromMatch: (match: DetailedReconciliationMatch) => any
-): number {
-  if (item.type === "multiple") return 0;
-  if (!item.match) return 0;
-
-  const transaction = getTransactionFromMatch(item.match);
-  if (!transaction) return 2; // Pas de transaction = rejeté
-
-  if (item.match.validationStatus === "VALIDATED") return 1; // Validé = plus bas (à la fin)
-  if (item.match.validationStatus === "REJECTED") return 2; // Rejeté = milieu
-  return 3; // En attente = plus haut (au début)
-}
-
 // Fonction pour obtenir la valeur de confiance
 function getConfidenceValue(
   item: any,
@@ -366,8 +350,8 @@ export function useReconciliationFilters(
     filteredGroups,
     selectedFilters,
     availableFilterTypes,
-    searchTerm,
     getInvoiceFromMatch,
+    getTransactionFromMatch,
     sortConfig,
   ]);
 
@@ -394,7 +378,7 @@ export function useReconciliationFilters(
 
     availableFilterTypes.forEach((type) => {
       let count = 0;
-      Object.entries(groupedWithMultipleFlag).forEach(([invoiceId, group]) => {
+      Object.values(groupedWithMultipleFlag).forEach((group) => {
         if (group.isOriginallyMultiple) {
           if (type === "MULTIPLE") {
             count++;

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Pencil, Check, X } from "lucide-react";
+import { Button, Input, Spinner } from "@forestar-be/ui";
 
 interface TitleEditorProps {
   title: string;
@@ -54,52 +55,60 @@ export default function TitleEditor({
 
   if (isEditing) {
     return (
-      <div className={`flex items-center space-x-2 w-full ${className}`}>
-        <input
+      <div className={`flex w-full items-center gap-2 ${className}`}>
+        <Input
           type="text"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="flex-1 min-w-0 px-2 py-1 border border-gray-300 rounded text-2xl font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          aria-label="Titre de la réconciliation"
+          className="h-10 min-w-0 flex-1 text-xl font-semibold md:text-xl"
           autoFocus
           disabled={isSaving}
         />
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={handleSave}
           disabled={isSaving}
-          className="cursor-pointer inline-flex items-center justify-center w-8 h-8 text-green-600 hover:text-green-700 hover:bg-green-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-success"
           title="Sauvegarder"
+          aria-label="Sauvegarder"
         >
           {isSaving ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+            <Spinner size="sm" className="text-current" />
           ) : (
-            <Check className="h-4 w-4" />
+            <Check />
           )}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={handleCancel}
           disabled={isSaving}
-          className="cursor-pointer inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded disabled:opacity-50 disabled:cursor-not-allowed"
           title="Annuler"
+          aria-label="Annuler"
         >
-          <X className="h-4 w-4" />
-        </button>
+          <X />
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className={`flex items-center w-full ${className}`}>
-      <div className="flex items-center space-x-2">
-        <span className="text-2xl font-bold text-gray-900">{title}</span>
-        <button
+    <div className={`flex w-full items-center ${className}`}>
+      <div className="flex min-w-0 items-center gap-2">
+        <h1 className="truncate text-2xl">{title}</h1>
+        <Button
+          variant="ghost"
+          size="icon-sm"
           onClick={handleEdit}
-          className="cursor-pointer inline-flex items-center justify-center w-8 h-8 text-gray-600 hover:text-gray-700 hover:bg-gray-50 rounded transition-colors"
           title="Modifier le titre"
+          aria-label="Modifier le titre"
         >
-          <Pencil className="h-4 w-4" />
-        </button>
+          <Pencil />
+        </Button>
       </div>
     </div>
   );

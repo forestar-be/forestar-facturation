@@ -1,9 +1,5 @@
 import * as XLSX from "xlsx";
-import {
-  DetailedReconciliationMatch,
-  DetailedInvoice,
-  DetailedBankTransaction,
-} from "@/types";
+import { DetailedReconciliationMatch, DetailedBankTransaction } from "@/types";
 import { getMatchTypeLabel } from "@/lib/reconciliationUtils";
 
 interface DisplayItem {

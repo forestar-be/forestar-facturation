@@ -58,8 +58,7 @@ const apiRequest = async (
     // `SSO_ENABLED` et pas seulement la vérité de `authToken` : celui-ci vaut
     // une sentinelle non vide en mode SSO depuis le 2026-09-06, pour que les
     // tests `if (!token)` du code hérité restent justes.
-    ...(!SSO_ENABLED &&
-      authToken && { Authorization: `Bearer ${authToken}` }),
+    ...(!SSO_ENABLED && authToken && { Authorization: `Bearer ${authToken}` }),
     ...(additionalHeaders as Record<string, string>),
   };
 

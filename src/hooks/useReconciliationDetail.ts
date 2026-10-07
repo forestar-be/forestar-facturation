@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useAuth, useRequireAuth } from "@/lib/auth";
+import { useAuth } from "@/lib/auth";
 import {
   getReconciliationDetails,
   updateMatch,
@@ -11,6 +11,7 @@ import {
 import { ReconciliationDetails, DetailedReconciliationMatch } from "@/types";
 import { exportToExcel } from "@/lib/excelExport";
 import { SortConfig } from "@/components/SortSelector";
+import { isExportWarningDismissed } from "@/components/ExportWarningModal";
 
 // Fonction utilitaire pour appliquer le tri
 function applySorting(
@@ -112,22 +113,6 @@ function getValidationOrder(
   return 2; // En attente
 }
 
-// Fonction pour obtenir l'ordre de validation pour le tri par défaut (validés à la fin)
-function getValidationOrderForDefault(
-  item: any,
-  getTransactionFromMatch: (match: DetailedReconciliationMatch) => any
-): number {
-  if (item.type === "multiple") return 0;
-  if (!item.match) return 0;
-
-  const transaction = getTransactionFromMatch(item.match);
-  if (!transaction) return 2; // Pas de transaction = rejeté
-
-  if (item.match.validationStatus === "VALIDATED") return 1; // Validé = plus bas (à la fin)
-  if (item.match.validationStatus === "REJECTED") return 2; // Rejeté = milieu
-  return 3; // En attente = plus haut (au début)
-}
-
 // Fonction pour obtenir la valeur de confiance
 function getConfidenceValue(
   item: any,
@@ -164,10 +149,9 @@ function getDateValue(
 }
 
 export function useReconciliationDetail(reconciliationId: string) {
+  // La redirection est portée par la garde du layout (`useRequireAuth`) : en
+  // mode SSO, l'absence de session part vers l'IdP, pas vers `/connexion`.
   const { isAuthenticated, isLoading: isLoadingAuth } = useAuth();
-  // La redirection est portée par `useRequireAuth` : en mode SSO, l'absence de
-  // session part vers l'IdP, pas vers `/connexion`.
-  useRequireAuth();
 
   const [reconciliation, setReconciliation] =
     useState<ReconciliationDetails | null>(null);
@@ -279,7 +263,7 @@ export function useReconciliationDetail(reconciliationId: string) {
           )
       ) || []
     );
-  }, [reconciliation?.transactions, reconciliation?.matches]);
+  }, [reconciliation]);
 
   // Calculer les factures non appariées
   const unmatchedInvoices = useMemo(() => {
@@ -291,7 +275,7 @@ export function useReconciliationDetail(reconciliationId: string) {
         return !match || match.matchType === "NONE" || !match.transactionId;
       }) || []
     );
-  }, [reconciliation?.invoices, reconciliation?.matches]);
+  }, [reconciliation]);
 
   // Helper functions
   const getInvoiceFromMatch = useCallback(
@@ -412,11 +396,8 @@ export function useReconciliationDetail(reconciliationId: string) {
   );
 
   const handleRejectMatch = useCallback(
+    // La confirmation est demandée par la page avant cet appel.
     async (match: DetailedReconciliationMatch) => {
-      if (!confirm("Êtes-vous sûr de vouloir rejeter cette correspondance ?")) {
-        return;
-      }
-
       try {
         const updatedMatch = await rejectMatch(reconciliationId, match.id, [
           "Correspondance rejetée par l'utilisateur",
@@ -505,20 +486,13 @@ export function useReconciliationDetail(reconciliationId: string) {
 
   // Réinitialiser la page quand les filtres changent
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- retour à la page 1 à chaque changement de recherche, de filtre ou de tri
     setCurrentPage(1);
   }, [searchTerm, selectedFilters, sortConfig]);
 
   // Logique d'export Excel
   const hasActiveFilters = Boolean(searchTerm || selectedFilters.length > 0);
   const hasActiveSort = Boolean(sortConfig.field);
-
-  const handleExportExcel = useCallback(() => {
-    if (hasActiveFilters) {
-      setShowExportWarning(true);
-    } else {
-      performExport();
-    }
-  }, [hasActiveFilters]);
 
   const performExport = useCallback(async () => {
     if (!reconciliation) return;
@@ -689,6 +663,14 @@ export function useReconciliationDetail(reconciliationId: string) {
     getInvoiceFromMatch,
     getTransactionFromMatch,
   ]);
+
+  const handleExportExcel = useCallback(() => {
+    if (hasActiveFilters && !isExportWarningDismissed()) {
+      setShowExportWarning(true);
+    } else {
+      performExport();
+    }
+  }, [hasActiveFilters, performExport]);
 
   return {
     // États

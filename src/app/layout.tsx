@@ -1,17 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import { ForestarProviders } from "@forestar-be/ui";
+import { fontVariables } from "@forestar-be/ui/fonts";
 import { AuthProvider } from "@/lib/auth";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Forestar Facturation - Réconciliation Bancaire",
@@ -21,15 +12,17 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="fr">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 antialiased`}
-      >
-        <AuthProvider>{children}</AuthProvider>
+    <html
+      lang="fr"
+      className={`${fontVariables} h-full antialiased`}
+      suppressHydrationWarning
+    >
+      <body className="flex min-h-full flex-col font-sans">
+        <ForestarProviders>
+          <AuthProvider>{children}</AuthProvider>
+        </ForestarProviders>
       </body>
     </html>
   );

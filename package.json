@@ -16,9 +16,9 @@
   },
   "dependencies": {
     "@forestar-be/core": "^0.7.1",
+    "@forestar-be/ui": "^0.11.0",
     "@hookform/resolvers": "^5.1.1",
-    "flowbite": "^3.1.2",
-    "flowbite-react": "^0.12.8",
+    "date-fns": "^4.4.0",
     "lucide-react": "^1.52.0",
     "next": "^16.3.4",
     "react": "^19.3.0",
