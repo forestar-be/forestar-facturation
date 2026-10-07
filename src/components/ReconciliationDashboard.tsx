@@ -5,9 +5,17 @@ import { useRouter } from "next/navigation";
 import ReconciliationProgress from "@/components/ReconciliationProgress";
 import DolibarrExportHelp from "@/components/DolibarrExportHelp";
 import InvoiceFamilyPicker from "@/components/InvoiceFamilyPicker";
+import DolibarrSourcePanel from "@/components/DolibarrSourcePanel";
+import { useDolibarrRead } from "@/hooks/useDolibarrRead";
+import {
+  DEFAULT_INVOICE_SOURCE,
+  InvoiceSourceStorage,
+  type InvoiceSource,
+} from "@/lib/invoiceSourceStorage";
 import { validateCSVFile } from "@/lib/csvUtils";
 import {
   uploadFiles,
+  uploadWithDolibarr,
   previewInvoices,
   getReconciliationStatus,
   getReconciliationResult,
@@ -23,6 +31,10 @@ import {
   FileDropzone,
   PageHeader,
   Spinner,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from "@forestar-be/ui";
 
 /** Aperçu des familles de factures du fichier déposé (R005). */
@@ -77,6 +89,39 @@ export default function ReconciliationDashboard() {
   // Numéro de la dernière demande d'aperçu : une réponse tardive d'un fichier
   // remplacé ou retiré entre-temps est ignorée.
   const previewRequestRef = useRef(0);
+
+  // Source des factures (R003) : Dolibarr par défaut, le CSV en secours. Le
+  // choix est relu du navigateur après le montage, pour que le premier rendu
+  // soit identique côté serveur et côté client.
+  const [source, setSource] = useState<InvoiceSource>(DEFAULT_INVOICE_SOURCE);
+  // Message du serveur quand la lecture Dolibarr a échoué et que l'écran a
+  // basculé sur le CSV (AC-08).
+  const [sourceNotice, setSourceNotice] = useState("");
+  const dolibarr = useDolibarrRead((message) => {
+    setSource("csv");
+    setSourceNotice(message);
+  });
+
+  useEffect(() => {
+    setSource(InvoiceSourceStorage.get());
+  }, []);
+
+  // Une lecture Dolibarr terminée pré-coche les familles par défaut.
+  const dolibarrDoneId =
+    dolibarr.state.status === "done" ? dolibarr.state.sourceId : null;
+  useEffect(() => {
+    if (dolibarr.state.status === "done") {
+      setSelectedFamilies(
+        new Set(
+          dolibarr.state.families
+            .filter((f) => f.defaultSelected)
+            .map((f) => f.family)
+        )
+      );
+    }
+    // Une fois par lecture terminée : l'identifiant de source la désigne.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dolibarrDoneId]);
 
   // Ref pour stocker l'ID du timeout de polling
   const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -254,11 +299,17 @@ export default function ReconciliationDashboard() {
   };
 
   const handleReconciliation = async () => {
-    if (!selectedFiles.invoices || !selectedFiles.transactions) {
+    const invoicesReady =
+      source === "dolibarr"
+        ? dolibarr.state.status === "done"
+        : !!selectedFiles.invoices;
+    if (!invoicesReady || !selectedFiles.transactions) {
       setErrors((prev) => ({
         ...prev,
         reconciliation:
-          "Veuillez sélectionner les deux fichiers avant de lancer la réconciliation",
+          source === "dolibarr"
+            ? "Veuillez lire les factures dans Dolibarr et sélectionner le fichier banque avant de lancer la réconciliation"
+            : "Veuillez sélectionner les deux fichiers avant de lancer la réconciliation",
       }));
       return;
     }
@@ -278,17 +329,36 @@ export default function ReconciliationDashboard() {
 
     try {
       // Upload des fichiers et lancement de la réconciliation
-      const uploadResult = await uploadFiles(
-        selectedFiles.invoices,
-        selectedFiles.transactions,
-        invoicePreview.status === "done"
-          ? invoicePreview.families
-              .map((f) => f.family)
-              .filter((family) => selectedFamilies.has(family))
-          : undefined
-      );
+      const families = (
+        source === "dolibarr"
+          ? dolibarr.state.status === "done"
+            ? dolibarr.state.families
+            : []
+          : invoicePreview.status === "done"
+            ? invoicePreview.families
+            : []
+      )
+        .map((f) => f.family)
+        .filter((family) => selectedFamilies.has(family));
+
+      const uploadResult =
+        source === "dolibarr" && dolibarr.state.status === "done"
+          ? await uploadWithDolibarr(
+              selectedFiles.transactions,
+              dolibarr.state.sourceId,
+              families
+            )
+          : await uploadFiles(
+              selectedFiles.invoices!,
+              selectedFiles.transactions,
+              invoicePreview.status === "done" ? families : undefined
+            );
 
       if (!uploadResult.success || !uploadResult.reconciliationId) {
+        // La lecture Dolibarr a expiré (410) : il faut la relancer.
+        if ("expired" in uploadResult && uploadResult.expired) {
+          dolibarr.reset();
+        }
         // En cas d'erreur d'upload, on reste dans l'interface normale
         throw new Error(uploadResult.message);
       }
@@ -300,6 +370,7 @@ export default function ReconciliationDashboard() {
       setSelectedFiles({ invoices: null, transactions: null });
       setFileNames({ invoices: "", transactions: "" });
       resetInvoicePreview();
+      dolibarr.reset();
 
       // Sauvegarder l'état dans localStorage
       ReconciliationStorage.saveState({
@@ -340,14 +411,38 @@ export default function ReconciliationDashboard() {
     }
   };
 
-  const familiesReady =
-    invoicePreview.status === "done" && selectedFamilies.size > 0;
+  const handleSourceChange = (next: InvoiceSource) => {
+    if (next === source) return;
+    setSource(next);
+    InvoiceSourceStorage.set(next);
+    setSourceNotice("");
+    setErrors((prev) => ({ ...prev, invoices: "", reconciliation: "" }));
+    // Chaque source repart de zéro : ni familles ni fichier de l'autre.
+    dolibarr.reset();
+    resetInvoicePreview();
+    setSelectedFiles((prev) => ({ ...prev, invoices: null }));
+    setFileNames((prev) => ({ ...prev, invoices: "" }));
+  };
+
+  const familiesLoaded =
+    source === "dolibarr"
+      ? dolibarr.state.status === "done"
+      : invoicePreview.status === "done";
+  const familiesReady = familiesLoaded && selectedFamilies.size > 0;
+
+  const invoicesChosen =
+    source === "dolibarr"
+      ? dolibarr.state.status === "done"
+      : !!selectedFiles.invoices;
 
   const canReconcile =
-    selectedFiles.invoices &&
+    invoicesChosen &&
     selectedFiles.transactions &&
     familiesReady &&
     !loadingStates.reconciliation;
+
+  const dolibarrFamilies =
+    dolibarr.state.status === "done" ? dolibarr.state.families : null;
 
   return (
     <div className="space-y-8">
@@ -364,41 +459,93 @@ export default function ReconciliationDashboard() {
             <CardContent className="space-y-4">
               <div className="flex min-h-9 flex-wrap items-center gap-2">
                 <FileText className="size-5 text-info" />
-                <h2 className="text-lg font-semibold">Fichier Factures</h2>
-                <DolibarrExportHelp className="ml-auto" />
+                <h2 className="text-lg font-semibold">Factures</h2>
+                {source === "csv" && <DolibarrExportHelp className="ml-auto" />}
               </div>
-              <FileDropzone
-                label="Fichier CSV des factures"
-                accept=".csv"
-                hint="Formats acceptés: CSV (max 10MB)"
-                onFileSelect={handleInvoiceFileSelect}
-                onClear={() => handleFileClear("invoices")}
-                loading={loadingStates.invoices}
-                error={errors.invoices}
-                fileName={fileNames.invoices}
-              />
-              {selectedFiles.invoices && (
-                <div className="text-sm text-success">
-                  ✓ Fichier sélectionné: {fileNames.invoices}
-                </div>
-              )}
-              {errors.invoices && <DolibarrExportHelp />}
-              {invoicePreview.status === "loading" && (
-                <div
-                  role="status"
-                  className="flex items-center gap-2 text-sm text-muted-foreground"
-                >
-                  <Spinner size="sm" />
-                  Lecture des familles de factures…
-                </div>
-              )}
-              {invoicePreview.status === "done" && (
-                <InvoiceFamilyPicker
-                  families={invoicePreview.families}
-                  selected={selectedFamilies}
-                  onChange={setSelectedFamilies}
-                />
-              )}
+
+              <Tabs
+                value={source}
+                onValueChange={(value) =>
+                  handleSourceChange(value as InvoiceSource)
+                }
+              >
+                <TabsList className="h-auto w-full">
+                  <TabsTrigger value="dolibarr" className="whitespace-normal">
+                    Récupérer depuis Dolibarr
+                  </TabsTrigger>
+                  <TabsTrigger value="csv" className="whitespace-normal">
+                    Fichier CSV
+                  </TabsTrigger>
+                </TabsList>
+
+                {sourceNotice && (
+                  <div
+                    role="alert"
+                    className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+                  >
+                    <p>Lecture depuis Dolibarr impossible : {sourceNotice}</p>
+                    <p className="mt-1">
+                      Vous pouvez déposer un export CSV à la place.
+                    </p>
+                  </div>
+                )}
+
+                <TabsContent value="dolibarr" className="mt-4 gap-4">
+                  <DolibarrSourcePanel
+                    state={dolibarr.state}
+                    onRead={(from, to) => {
+                      setSourceNotice("");
+                      setErrors((prev) => ({ ...prev, reconciliation: "" }));
+                      void dolibarr.start(from, to);
+                    }}
+                    onReset={() => {
+                      dolibarr.reset();
+                      setSelectedFamilies(new Set());
+                    }}
+                  />
+                  {dolibarrFamilies && (
+                    <InvoiceFamilyPicker
+                      families={dolibarrFamilies}
+                      selected={selectedFamilies}
+                      onChange={setSelectedFamilies}
+                    />
+                  )}
+                </TabsContent>
+
+                <TabsContent value="csv" className="mt-4 gap-4">
+                  <FileDropzone
+                    label="Fichier CSV des factures"
+                    accept=".csv"
+                    hint="Formats acceptés: CSV (max 10MB)"
+                    onFileSelect={handleInvoiceFileSelect}
+                    onClear={() => handleFileClear("invoices")}
+                    loading={loadingStates.invoices}
+                    error={errors.invoices}
+                    fileName={fileNames.invoices}
+                  />
+                  {selectedFiles.invoices && (
+                    <div className="text-sm text-success">
+                      ✓ Fichier sélectionné: {fileNames.invoices}
+                    </div>
+                  )}
+                  {invoicePreview.status === "loading" && (
+                    <div
+                      role="status"
+                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                    >
+                      <Spinner size="sm" />
+                      Lecture des familles de factures…
+                    </div>
+                  )}
+                  {invoicePreview.status === "done" && (
+                    <InvoiceFamilyPicker
+                      families={invoicePreview.families}
+                      selected={selectedFamilies}
+                      onChange={setSelectedFamilies}
+                    />
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
@@ -431,6 +578,7 @@ export default function ReconciliationDashboard() {
       {/* Section de lancement */}
       {(selectedFiles.invoices ||
         selectedFiles.transactions ||
+        dolibarr.state.status === "done" ||
         hasActiveReconciliation) && (
         <Card>
           <CardContent>
@@ -446,10 +594,11 @@ export default function ReconciliationDashboard() {
                     ? "Une réconciliation est actuellement en cours de traitement"
                     : canReconcile
                       ? "Tous les fichiers sont prêts, vous pouvez lancer la réconciliation"
-                      : invoicePreview.status === "done" &&
-                          selectedFamilies.size === 0
+                      : familiesLoaded && selectedFamilies.size === 0
                         ? "Cochez au moins une famille de factures pour continuer"
-                        : "Sélectionnez les deux fichiers pour continuer"}
+                        : source === "dolibarr"
+                          ? "Lisez les factures dans Dolibarr et sélectionnez le fichier banque pour continuer"
+                          : "Sélectionnez les deux fichiers pour continuer"}
                 </p>
               </div>
               {!hasActiveReconciliation && (
