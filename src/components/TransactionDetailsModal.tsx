@@ -35,7 +35,7 @@ export default function TransactionDetailsModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           {/* Informations principales */}
           <section className="rounded-lg bg-info/10 p-4">
             <h3 className="mb-3 flex items-center gap-2 font-medium">

@@ -298,7 +298,7 @@ export default function ReconciliationDashboard() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <Card>
             <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex min-h-9 flex-wrap items-center gap-2">
                 <FileText className="size-5 text-info" />
                 <h2 className="text-lg font-semibold">Fichier Factures</h2>
                 <DolibarrExportHelp className="ml-auto" />
@@ -323,7 +323,7 @@ export default function ReconciliationDashboard() {
 
           <Card>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
+              <div className="flex min-h-9 items-center gap-2">
                 <FileText className="size-5 text-success" />
                 <h2 className="text-lg font-semibold">Fichier Banque</h2>
               </div>

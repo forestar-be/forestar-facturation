@@ -372,7 +372,7 @@ export default function MatchEditor({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             {error && (
               <div
                 role="alert"
@@ -388,6 +388,7 @@ export default function MatchEditor({
               <h3 className="mb-3 text-lg font-medium">Facture</h3>
               <DataList
                 columns={3}
+                className="sm:grid-cols-4"
                 items={[
                   { label: "Référence", value: invoice?.ref || "N/A" },
                   { label: "Tiers", value: invoice?.tiers || "N/A" },

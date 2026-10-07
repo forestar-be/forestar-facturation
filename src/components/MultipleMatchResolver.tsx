@@ -168,7 +168,7 @@ export default function MultipleMatchResolver({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <div>
               <h4 className="mb-2 font-medium">Facture :</h4>
               <div className="rounded-lg bg-muted/50 p-4 text-sm">

@@ -75,7 +75,7 @@ export default function DolibarrExportHelp({
             <DialogTitle>Exporter les factures depuis Dolibarr</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6 text-sm">
+          <div className="min-w-0 space-y-6 text-sm">
             <section>
               <h4 className="mb-2 font-semibold">
                 Avec le profil (recommandé)

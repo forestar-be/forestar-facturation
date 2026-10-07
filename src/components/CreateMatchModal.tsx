@@ -106,7 +106,7 @@ export default function CreateMatchModal({
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="min-w-0 space-y-6">
           {error && (
             <div
               role="alert"

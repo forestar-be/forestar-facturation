@@ -99,7 +99,7 @@ export default function TitleEditor({
   return (
     <div className={`flex w-full items-center ${className}`}>
       <div className="flex min-w-0 items-center gap-2">
-        <h1 className="truncate text-2xl">{title}</h1>
+        <h1 className="text-2xl break-words">{title}</h1>
         <Button
           variant="ghost"
           size="icon-sm"
