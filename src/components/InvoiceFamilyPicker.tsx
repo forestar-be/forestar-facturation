@@ -64,7 +64,8 @@ export default function InvoiceFamilyPicker({
                   </span>
                   {f.excludedCash > 0 && (
                     <span className="block text-xs text-muted-foreground">
-                      dont {f.excludedCash} en espèces ou au comptoir, ignorée
+                      dont {f.excludedCash} hors virement ou au comptoir,
+                      ignorée
                       {f.excludedCash > 1 ? "s" : ""}
                     </span>
                   )}
@@ -89,7 +90,7 @@ export default function InvoiceFamilyPicker({
               {formatAmount(total.totalTTC)} TTC
             </strong>
             {total.excludedCash > 0 &&
-              ` (dont ${total.excludedCash} en espèces ou au comptoir, ignorées)`}
+              ` (dont ${total.excludedCash} hors virement ou au comptoir, ignorées)`}
           </>
         )}
       </p>
