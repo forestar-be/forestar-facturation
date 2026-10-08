@@ -43,7 +43,7 @@ const FIELDS_WITHOUT_PROFILE: { object: string; field: string; why: string }[] =
     {
       object: "Facture",
       field: "Mode de règlement (id)",
-      why: "pour écarter les espèces",
+      why: "obligatoire (seuls les virements sont rapprochés)",
     },
   ];
 
@@ -119,8 +119,10 @@ export default function DolibarrExportHelp({
                   <code className="rounded bg-muted px-1">
                     20250512+20260511
                   </code>
-                  . Puis <strong>Étape suivante</strong>, et encore{" "}
-                  <strong>Étape suivante</strong>.
+                  . Sur la ligne <strong>Mode de règlement (id)</strong>,
+                  saisissez <code className="rounded bg-muted px-1">2</code>{" "}
+                  (virement bancaire). Puis <strong>Étape suivante</strong>, et
+                  encore <strong>Étape suivante</strong>.
                 </li>
                 <li>
                   Laissez le format <strong>CSV ISO-8859-1</strong> (ou{" "}
@@ -168,9 +170,12 @@ export default function DolibarrExportHelp({
 
             <section className="rounded-lg border border-info/25 bg-info/10 p-3">
               <p>
-                Le fichier attendu est un <strong>CSV</strong> de Dolibarr. Les
-                factures payées en espèces sont ignorées, les avoirs et les
-                acomptes sont reconnus automatiquement.
+                Le fichier attendu est un <strong>CSV</strong> de Dolibarr.
+                Seules les factures réglées par <strong>virement</strong> sont
+                rapprochées : celles payées par carte, en espèces ou par chèque
+                n&apos;arrivent pas une à une sur le compte et sont ignorées,
+                même si vous oubliez le filtre de l&apos;étape 4. Les avoirs et
+                les acomptes sont reconnus automatiquement.
               </p>
             </section>
           </div>

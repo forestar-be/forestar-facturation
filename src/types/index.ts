@@ -279,10 +279,10 @@ export interface MatchModificationResult {
 export interface InvoiceFamilySummary {
   family: string;
   label: string;
-  /** Lignes de la famille, espèces et comptoir compris. */
+  /** Lignes de la famille, hors virement et comptoir compris. */
   count: number;
   totalTTC: number;
-  /** Lignes de la famille écartées de toute façon (espèces, vente comptoir). */
+  /** Lignes de la famille écartées de toute façon (hors virement, vente comptoir). */
   excludedCash: number;
   defaultSelected: boolean;
 }

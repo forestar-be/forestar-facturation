@@ -121,7 +121,9 @@ export default function ReconciliationHeader({
                     suivants :
                   </p>
                   <ul className="ml-2 list-inside list-disc space-y-1">
-                    <li>Exclusion des factures en espèces</li>
+                    <li>
+                      Seules les factures réglées par virement sont rapprochées
+                    </li>
                     <li>Exclusion des ventes au comptoir</li>
                     <li>
                       Exclusion des factures dupliquées (acompte et standard)
